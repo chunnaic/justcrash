@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRASH</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d18;color:white;font-family:Arial,sans-serif}
+header{height:65px;background:#111827;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #293449}
+.logo{font-size:23px;font-weight:900;color:#55e6a5}
+.balance{background:#202d42;padding:11px 18px;border-radius:9px;color:#55e6a5;font-weight:bold}
+.container{max-width:1100px;margin:25px auto;padding:15px}
+.panel{background:#111a2b;border:1px solid #29364d;border-radius:12px;padding:22px;margin-bottom:18px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.status{color:#9baac1;font-size:13px}
+.note{color:#9baac1;font-size:12px;margin:4px 0 0}
+.game{height:360px;position:relative;background:radial-gradient(ellipse at center,#172c43,#0b1220 75%);border-radius:12px;overflow:hidden;margin-top:20px}
+canvas{width:100%;height:100%}
+.multiplier{position:absolute;top:36%;width:100%;text-align:center;font-size:65px;font-weight:900;color:#55e6a5;pointer-events:none}
+.subtitle{position:absolute;top:59%;width:100%;text-align:center;color:#9aaac0;pointer-events:none;padding:0 10px}
+.bet{margin-top:18px;display:grid;gap:10px}
+.betrow{display:flex;align-items:center;gap:10px}
+.betrow label{width:150px;color:#9baac1;font-size:13px}
+input{flex:1;min-width:0;background:#202d42;border:1px solid #33445f;border-radius:8px;color:#fff;font-size:18px;font-weight:bold;padding:12px}
+input:disabled{opacity:.5}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:#26354b;color:white;padding:10px 12px;flex:1}
+.controls{display:flex;gap:12px;margin-top:18px}
+button{border:0;border-radius:8px;padding:14px 20px;font-size:15px;font-weight:bold;cursor:pointer}
+.start{background:#42d99b;color:#071b13;flex:1}
+.start.cash{background:#ffc94d;color:#241a00;animation:pl .6s ease-in-out infinite}
+@keyframes pl{50%{transform:scale(1.03)}}
+.reset{background:#26354b;color:white}
+.refill{background:#6b8cff;color:white;width:100%;margin-top:12px;display:none}
+button:disabled{opacity:.4;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:#202d42;padding:17px;border-radius:9px}
+.stat small{color:#9baac1}
+.stat strong{display:block;font-size:23px;margin-top:8px}
+.green{color:#55e6a5}
+.history{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:15px}
+.history-item{background:#202d42;padding:12px;border-radius:7px;text-align:center;font-weight:bold}
+.store{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.theme{background:#202d42;padding:16px;border-radius:9px}
+.theme button{width:100%;margin-top:12px;background:#42d99b;color:#071b13}
+.theme button.owned{background:#34445a;color:white}
+.theme-preview{height:55px;border-radius:7px;margin-bottom:12px}
+.coderow{display:flex;gap:10px;margin-top:12px}
+.coderow input{text-transform:uppercase}
+.codemsg{margin-top:10px;font-size:13px;min-height:18px;color:#9baac1}
+.log{max-height:180px;overflow:auto;font-size:13px;color:#b6c4d8}
+.log div{padding:8px;border-bottom:1px solid #29364d}
+@media(max-width:600px){
+ .stats{grid-template-columns:1fr}
+ .history{grid-template-columns:repeat(3,1fr)}
+ .store{grid-template-columns:1fr}
+ .multiplier{font-size:48px}
+ .game{height:280px}
+ .betrow label{width:100px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<canvas id="fx" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50"></canvas>
+
+<header>
+ <div class="logo">CRASH</div>
+ <div class="balance">🪙 <span id="coins">1,000</span></div>
+</header>
+
+<div class="container">
+
+ <div class="panel">
+  <div class="top">
+   <h2>Crash</h2>
+   <div class="status" id="status">待機中</div>
+  </div>
+  <p class="note">ゲーム内コインだけで遊べます。現実のお金とは関係ありません。倍率が上がっている間に CASH OUT しよう!</p>
+
+  <div class="game" id="game">
+   <canvas id="chart"></canvas>
+   <div class="multiplier" id="multiplier">1.00x</div>
+   <div class="subtitle" id="subtitle">ベット額を決めて BET & START</div>
+  </div>
+
+  <div class="bet">
+   <div class="betrow"><label>ベット額</label><input id="bet" type="number" min="1" step="1" value="100" inputmode="numeric"></div>
+   <div class="chips">
+    <button class="chip" data-a="10">+10</button>
+    <button class="chip" data-a="100">+100</button>
+    <button class="chip" data-a="1000">+1000</button>
+    <button class="chip" data-a="half">½</button>
+    <button class="chip" data-a="x2">×2</button>
+    <button class="chip" data-a="max">MAX</button>
+   </div>
+   <div class="betrow"><label>自動キャッシュアウト</label><input id="auto" type="number" min="1.01" step="0.01" placeholder="なし (例 2.00)" inputmode="decimal"></div>
+  </div>
+
+  <div class="controls">
+   <button class="start" id="start">BET & START</button>
+   <button class="reset" id="reset">RESET</button>
+  </div>
+  <button class="refill" id="refill">🆘 コインが少ないので 500 コイン補充</button>
+ </div>
+
+ <div class="panel">
+  <h3>MY STATUS</h3>
+  <div class="stats">
+   <div class="stat">
+    <small>所持コイン</small>
+    <strong class="green" id="coinStat">1,000</strong>
+   </div>
+   <div class="stat">
+    <small>累計獲得コイン</small>
+    <strong id="total">0</strong>
+   </div>
+   <div class="stat">
+    <small>プレイ回数</small>
+    <strong id="plays">0</strong>
+   </div>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h3>CRASH HISTORY</h3>
+  <div class="history" id="history">
+   <div class="history-item">---</div>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h3>COIN LOG</h3>
+  <div class="log" id="log"></div>
+ </div>
+
+ <div class="panel">
+  <h3>CODE</h3>
+  <p style="color:#9baac1;font-size:13px">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
+  <div class="coderow">
+   <input id="code" type="text" placeholder="コードを入力" autocomplete="off" autocapitalize="characters" maxlength="20">
+   <button class="start" id="redeem" style="flex:0 0 auto">受け取る</button>
+  </div>
+  <div class="codemsg" id="codemsg"></div>
+ </div>
+
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+const themes=[
+ {id:"default",name:"Original",price:0,bg:"#090d18",game:"#172c43"},
+ {id:"purple",name:"Purple",price:300,bg:"#130c20",game:"#352052"},
+ {id:"red",name:"Red",price:500,bg:"#200d16",game:"#54202c"},
+ {id:"blue",name:"Ocean",price:800,bg:"#071522",game:"#103d59"},
+ {id:"gold",name:"Gold",price:1200,bg:"#191509",game:"#514020"},
+ {id:"green",name:"Emerald",price:1500,bg:"#081b16",game:"#164a39"}
+];
+
+let saved=null;
+try{saved=JSON.parse(localStorage.getItem("crashDemoData")||"null")}catch(e){}
+
+let data=saved||{
+ coins:1000,
+ total:0,
+ plays:0,
+ owned:["default"],
+ selected:"default",
+ history:[],
+ logs:[]
+};
+
+let running=false,animation=null,startTime=0,crashTime=0,crashMult=1,current=1;
+let points=[],finished=false,bet=0,cashed=0,payout=0,autoAt=0;
+
+const canvas=$("chart");
+const ctx=canvas.getContext("2d");
+
+function save(){
+ try{localStorage.setItem("crashDemoData",JSON.stringify(data))}catch(e){}
+ updateUI();
+}
+
+function updateUI(){
+ $("coins").textContent=data.coins.toLocaleString();
+ $("coinStat").textContent=data.coins.toLocaleString();
+ $("total").textContent=data.total.toLocaleString();
+ $("plays").textContent=data.plays;
+
+ $("bet").disabled=running;
+ $("auto").disabled=running;
+ $("reset").disabled=running;
+ document.querySelectorAll(".chip").forEach(b=>b.disabled=running);
+ const left=Math.max(0,3-(data.refills||0));
+ $("refill").style.display=(data.coins<10&&!running)?"block":"none";
+ $("refill").disabled=left<=0;
+ $("refill").textContent=left>0?"🆘 コインが少ないので 500 コイン補充(あと"+left+"回)":"補充は3回までです(使い切りました)";
+
+ $("history").innerHTML="";
+ if(!data.history.length){
+  $("history").innerHTML='<div class="history-item">---</div>';
+ }else{
+  data.history.slice(0,12).forEach(v=>{
+   let el=document.createElement("div");
+   el.className="history-item "+(v>=2?"green":"");
+   el.textContent=v.toFixed(2)+"x";
+   $("history").appendChild(el);
+  });
+ }
+
+ $("log").innerHTML="";
+ data.logs.slice(0,15).forEach(item=>{
+  let el=document.createElement("div");
+  el.textContent=item;
+  $("log").appendChild(el);
+ });
+
+}
+
+function addLog(message){
+ data.logs.unshift(new Date().toLocaleString()+" | "+message);
+ data.logs=data.logs.slice(0,30);
+}
+
+function applyTheme(id){
+ let t=themes.find(x=>x.id===id);
+ if(!t)return;
+ document.body.style.background=t.bg;
+ $("game").style.background=
+  "radial-gradient(ellipse at center,"+t.game+",#0b1220 85%)";
+ data.selected=id;
+ save();
+}
+
+function resize(){
+ const rect=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=rect.width*dpr;
+ canvas.height=rect.height*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ draw();
+}
+
+function draw(){
+ const w=canvas.clientWidth;
+ const h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+
+ ctx.strokeStyle="rgba(150,180,210,.09)";
+ for(let i=1;i<6;i++){
+  let y=h-i*h/6;
+  ctx.beginPath();
+  ctx.moveTo(0,y);
+  ctx.lineTo(w,y);
+  ctx.stroke();
+ }
+
+ if(points.length<2)return;
+
+ const max=Math.max(3,current*1.2);
+ const last=points[points.length-1];
+ const tmax=Math.max(4000,last.t*1.15);
+ const col=finished&&!cashed?"#ff647c":(cashed?"#ffc94d":"#55e6a5");
+ const X=p=>(p.t/tmax)*w;
+ const Y=p=>h-((p.v-1)/max)*h*.85;
+
+ ctx.beginPath();
+ points.forEach((p,i)=>{
+  if(i===0)ctx.moveTo(X(p),Y(p));
+  else ctx.lineTo(X(p),Y(p));
+ });
+
+ ctx.strokeStyle=col;
+ ctx.lineWidth=4;
+ ctx.lineJoin="round";
+ ctx.shadowColor=col;
+ ctx.shadowBlur=12;
+ ctx.stroke();
+ ctx.shadowBlur=0;
+
+ ctx.lineTo(X(last),h);
+ ctx.lineTo(0,h);
+ ctx.closePath();
+
+ let gradient=ctx.createLinearGradient(0,0,0,h);
+ gradient.addColorStop(0,col+"40");
+ gradient.addColorStop(1,col+"00");
+ ctx.fillStyle=gradient;
+ ctx.fill();
+}
+
+// クラッシュ倍率(還元率92%)
+function crashPoint(){
+ const r=Math.random();
+ return Math.min(100,Math.max(1,Math.floor(92/(1-r))/100));
+}
+
+function setBtn(){
+ const b=$("start");
+ if(!running){
+  b.textContent="BET & START";b.className="start";b.disabled=false;
+ }else if(!cashed){
+  b.textContent="CASH OUT  🪙"+Math.floor(bet*current).toLocaleString();
+  b.className="start cash";b.disabled=false;
+ }else{
+  b.textContent="✅ キャッシュアウト済み";b.className="start";b.disabled=true;
+ }
+}
+
+function start(){
+ if(running)return;
+
+ initAC();
+ bet=Math.floor(+$("bet").value);
+ if(!(bet>=1)){$("subtitle").textContent="ベット額を入力してください";return}
+ if(bet>data.coins){$("subtitle").textContent="コインが足りません";return}
+ autoAt=+$("auto").value;
+ if(!(autoAt>=1.01))autoAt=0;
+
+ data.coins-=bet;
+ data.plays++;
+ cashed=0;payout=0;
+ addLog("ベット | -"+bet.toLocaleString()+"コイン");
+
+ crashMult=crashPoint();
+ crashTime=Math.log(crashMult)/Math.log(1.12)*500;
+
+ running=true;
+ finished=false;
+ current=1;
+ points=[{t:0,v:1}];
+ startTime=performance.now();
+
+ $("multiplier").style.color="#55e6a5";
+ $("multiplier").textContent="1.00x";
+ $("status").textContent="プレイ中  ベット 🪙"+bet.toLocaleString();
+ $("subtitle").textContent="倍率上昇中... CASH OUT で確定!";
+ save();
+ setBtn();
+ animate();
+}
+
+function cashOut(m){
+ if(!running||cashed)return;
+ m=Math.floor((m||current)*100)/100;
+ cashed=m;
+ payout=Math.floor(bet*m);
+ data.coins+=payout;
+ data.total+=payout;
+ addLog("キャッシュアウト | "+m.toFixed(2)+"x | +"+payout.toLocaleString()+"コイン (利益 "+(payout-bet>=0?"+":"")+(payout-bet).toLocaleString()+")");
+ if(payout>bet)coinRain(payout-bet);
+ $("multiplier").style.color="#ffc94d";
+ $("subtitle").textContent="✅ "+m.toFixed(2)+"x で +"+payout.toLocaleString()+" COINS!  結末を見届けよう…";
+ save();
+ setBtn();
+}
+
+function animate(){
+ if(!running)return;
+
+ const elapsed=performance.now()-startTime;
+ const crashed=elapsed>=crashTime;
+
+ current=crashed?crashMult:Math.min(crashMult,Math.pow(1.12,elapsed/500));
+ points.push({t:Math.min(elapsed,crashTime),v:current});
+ $("multiplier").textContent=current.toFixed(2)+"x";
+
+ if(!crashed&&!cashed&&autoAt&&current>=autoAt)cashOut(autoAt);
+ if(!cashed)setBtn();
+
+ draw();
+
+ if(crashed){
+  finish();
+  return;
+ }
+
+ animation=requestAnimationFrame(animate);
+}
+
+function finish(){
+ if(finished)return;
+ finished=true;
+ running=false;
+ cancelAnimationFrame(animation);
+
+ current=crashMult;
+ $("multiplier").textContent=crashMult.toFixed(2)+"x";
+ $("multiplier").style.color="#ff647c";
+ $("status").textContent="CRASH @ "+crashMult.toFixed(2)+"x";
+
+ if(cashed){
+  $("subtitle").textContent="✅ "+cashed.toFixed(2)+"x でキャッシュアウト 利益 "+(payout-bet>=0?"+":"")+(payout-bet).toLocaleString()+" COINS";
+ }else{
+  $("subtitle").textContent="💥 クラッシュ... -"+bet.toLocaleString()+" COINS";
+  addLog("負け | "+crashMult.toFixed(2)+"x | -"+bet.toLocaleString()+"コイン");
+ }
+
+ data.history.unshift(crashMult);
+ data.history=data.history.slice(0,30);
+
+ draw();
+ setBtn();
+ save();
+}
+
+function reset(){
+ if(running)return;
+ current=1;
+ points=[];
+ finished=false;
+
+ $("multiplier").textContent="1.00x";
+ $("multiplier").style.color="#55e6a5";
+ $("subtitle").textContent="ベット額を決めて BET & START";
+ $("status").textContent="待機中";
+ setBtn();
+ draw();
+}
+
+document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+ let v=Math.floor(+$("bet").value)||0;
+ const a=b.dataset.a;
+ v=a=="half"?Math.floor(v/2):a=="x2"?v*2:a=="max"?data.coins:v+ +a;
+ $("bet").value=Math.max(1,Math.min(v,Math.max(1,data.coins)));
+});
+
+$("refill").onclick=()=>{
+ if((data.refills||0)>=3)return;
+ data.refills=(data.refills||0)+1;
+ data.coins+=500;
+ addLog("無料補充("+data.refills+"/3回目) | +500コイン");
+ save();
+};
+
+$("start").addEventListener("click",()=>{
+ if(!running)start();
+ else cashOut(current);
+});
+$("reset").addEventListener("click",reset);
+window.addEventListener("resize",()=>{resize();fxResize()});
+window.addEventListener("keydown",e=>{
+ if(e.code==="Space"&&document.activeElement.tagName!=="INPUT"&&!$("start").disabled){
+  e.preventDefault();
+  $("start").click();
+ }
+});
+
+// ===== コード入力 =====
+// コードそのものはここに書かず、暗号化した値(SHA-256)だけを置いています。
+// ソースを見ても元のコードはわかりません。 {暗号化した値:もらえるコイン数}
+// コードを増やすときは codegen.html で作って、codes.json に入れます。
+const SALT="nx-crash:";
+const CODES={
+ "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df": 500,
+ "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f": 1000,
+ "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced": 300,
+ "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6": 100000
+};
+function sha256(ascii){
+ const rr=(v,a)=>(v>>>a)|(v<<(32-a));
+ const mp=Math.pow,mw=mp(2,32);
+ let result="";
+ const words=[],bitLen=ascii.length*8;
+ let hash=[],k=[],pc=0,isC={};
+ for(let c=2;pc<64;c++){if(!isC[c]){for(let i=0;i<313;i+=c)isC[i]=c;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0}}
+ ascii+="\x80";
+ while(ascii.length%64-56)ascii+="\x00";
+ for(let i=0;i<ascii.length;i++)words[i>>2]|=ascii.charCodeAt(i)<<((3-i)%4)*8;
+ words[words.length]=((bitLen/mw)|0);
+ words[words.length]=bitLen;
+ for(let j=0;j<words.length;){
+  const w=words.slice(j,j+=16),oldHash=hash;
+  hash=hash.slice(0,8);
+  for(let i=0;i<64;i++){
+   const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+   const t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10))|0));
+   const t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+   hash=[(t1+t2)|0].concat(hash);
+   hash[4]=(hash[4]+t1)|0;
+  }
+  for(let i=0;i<8;i++)hash[i]=(hash[i]+oldHash[i])|0;
+ }
+ for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;result+=((b<16)?0:"")+b.toString(16)}
+ return result;
+}
+// 同じフォルダの codes.json があれば、そのコードも使えるようにする(後から増やす用)
+try{fetch("codes.json?"+Date.now()).then(r=>r.ok?r.json():{}).then(j=>Object.assign(CODES,j)).catch(()=>{})}catch(e){}
+function redeem(){
+ const c=$("code").value.toUpperCase().replace(/[^A-Z0-9]/g,""),m=$("codemsg");
+ data.used=data.used||[];
+ if(!c){m.style.color="#9baac1";m.textContent="コードを入力してください";return}
+ const h=sha256(SALT+c);
+ if(!(h in CODES)){m.style.color="#ff647c";m.textContent="コードが違います";return}
+ if(data.used.includes(h)){m.style.color="#ff647c";m.textContent="このコードはもう使っています";return}
+ data.used.push(h);
+ data.coins+=CODES[h];
+ addLog("コード使用 | +"+CODES[h].toLocaleString()+"コイン");
+ save();
+ m.style.color="#55e6a5";
+ m.textContent="🎉 +"+CODES[h].toLocaleString()+" コインをゲットしました!";
+ $("code").value="";
+}
+$("redeem").addEventListener("click",redeem);
+$("code").addEventListener("keydown",e=>{if(e.key==="Enter")redeem()});
+
+// ===== コインの雨(左・右から) =====
+const fx=$("fx"),fctx=fx.getContext("2d");
+let rain=[],rainOn=false,rl=0,AC=null;
+function fxResize(){
+ const d=window.devicePixelRatio||1;
+ fx.width=innerWidth*d;fx.height=innerHeight*d;
+ fctx.setTransform(d,0,0,d,0,0);
+}
+function initAC(){
+ try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume()}catch(e){}
+}
+function coinSfx(){
+ if(!AC)return;
+ try{
+  const t=AC.currentTime;
+  for(let i=0;i<5;i++){
+   const o=AC.createOscillator(),gn=AC.createGain(),s=t+i*.07;
+   o.type="triangle";o.frequency.value=880*Math.pow(1.19,i);
+   o.connect(gn);gn.connect(AC.destination);
+   gn.gain.setValueAtTime(.12,s);
+   gn.gain.exponentialRampToValueAtTime(.001,s+.2);
+   o.start(s);o.stop(s+.22);
+  }
+ }catch(e){}
+}
+function coinRain(profit){
+ const W=innerWidth,H=innerHeight,n=20; // 降るコインは合計20枚(左10・右10)
+ for(let i=0;i<n;i++){
+  const side=i%2;
+  const p={d:Math.random()*1.4,s:18+Math.random()*18,g:700,vx:0,vy:0,x:0,y:0,r:Math.random()*6,vr:(Math.random()-.5)*8};
+  if(side===0){p.x=-30;p.y=Math.random()*H*.45;p.vx=250+Math.random()*450;p.vy=-250+Math.random()*200;p.g=900}
+  else{p.x=W+30;p.y=Math.random()*H*.45;p.vx=-(250+Math.random()*450);p.vy=-250+Math.random()*200;p.g=900}
+  rain.push(p);
+ }
+ coinSfx();
+ if(!rainOn){rainOn=true;rl=performance.now();requestAnimationFrame(rainLoop)}
+}
+function stepRain(dt){
+ for(let i=rain.length-1;i>=0;i--){
+  const p=rain[i];
+  if(p.d>0){p.d-=dt;continue}
+  p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;
+  if(p.y>innerHeight+50||p.x<-120||p.x>innerWidth+120)rain.splice(i,1);
+ }
+}
+function drawRain(){
+ fctx.clearRect(0,0,innerWidth,innerHeight);
+ for(const p of rain){
+  if(p.d>0)continue;
+  fctx.save();
+  fctx.translate(p.x,p.y);fctx.rotate(p.r);
+  fctx.font=p.s+"px sans-serif";fctx.textAlign="center";fctx.textBaseline="middle";
+  fctx.fillText("🪙",0,0);
+  fctx.restore();
+ }
+}
+// 描画は端末のリフレッシュレートいっぱいで更新(速さは経過時間で計算するのでfpsが違っても同じ)
+function rainLoop(t){
+ const dt=Math.min(.05,(t-rl)/1000)*1.5;rl=t;
+ stepRain(dt);
+ drawRain();
+ if(rain.length)requestAnimationFrame(rainLoop);
+ else{rainOn=false;fctx.clearRect(0,0,innerWidth,innerHeight)}
+}
+
+fxResize();
+resize();
+if(themes.some(t=>t.id===data.selected)){
+ applyTheme(data.selected);
+}else{
+ updateUI();
+}
+setBtn();
+</script>
+</body>
+</html>
