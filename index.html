@@ -51,7 +51,36 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .codemsg{margin-top:10px;font-size:13px;min-height:18px;color:#9baac1}
 .log{max-height:180px;overflow:auto;font-size:13px;color:#b6c4d8}
 .log div{padding:8px;border-bottom:1px solid #29364d}
+.app{display:flex;align-items:stretch;min-height:calc(100vh - 65px)}
+.side{width:190px;flex:0 0 auto;background:#111827;border-right:1px solid #293449;padding:14px 10px}
+.navwrap{position:relative}
+.nav{display:block;width:100%;text-align:left;background:transparent;color:#cdd8e8;padding:13px 14px;margin-bottom:6px;font-size:15px}
+.nav:hover{background:#1c2940}
+.nav.active{background:#202d42;color:#55e6a5}
+.sub{display:none;position:absolute;left:calc(100% + 6px);top:0;width:120px;background:#111a2b;border:1px solid #29364d;border-radius:10px;padding:6px;z-index:30}
+.sub.open{display:block}
+.sub button{display:block;width:100%;text-align:left;background:transparent;color:#fff;padding:10px 12px;font-size:14px}
+.sub button:hover{background:#26354b}
+.navmsg{color:#ff647c;font-size:12px;min-height:16px;padding:0 6px}
+.app .container{flex:1;min-width:0;margin:10px 0}
+.page{display:none}
+.page.on{display:block}
+.rank-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#202d42;border-radius:9px;padding:13px 16px;margin-bottom:8px}
+.rank-row.me{outline:2px solid #55e6a5}
+.rank-row:nth-child(1){background:#3a3216}
+.rank-row:nth-child(2){background:#2c3340}
+.rank-row:nth-child(3){background:#35271d}
+.rk-name{flex:1;min-width:0;font-weight:bold;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-no{width:44px;text-align:center;color:#9baac1;font-weight:bold}
+.rk-coins{color:#55e6a5;font-weight:900;font-size:18px;white-space:nowrap}
+.rank-empty{color:#9baac1;font-size:14px;padding:14px 4px}
 @media(max-width:600px){
+ .app{flex-direction:column}
+ .side{width:100%;border-right:0;border-bottom:1px solid #293449;display:flex;flex-wrap:wrap;gap:6px;padding:10px}
+ .nav{width:auto;margin:0;padding:10px 12px;font-size:14px}
+ .sub{left:0;top:calc(100% + 6px)}
+ .navmsg{width:100%}
+
  .stats{grid-template-columns:1fr}
  .history{grid-template-columns:repeat(3,1fr)}
  .store{grid-template-columns:1fr}
@@ -66,14 +95,30 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <header>
  <div class="logo">CRASH</div>
- <div class="balance">🪙 <span id="coins">1,000</span></div>
+ <div style="display:flex;align-items:center;gap:12px"><div class="status" id="who"></div><div class="balance">🪙 <span id="coins">1,000</span></div></div>
 </header>
 
-<div class="container">
-
+<div class="app">
+ <nav class="side">
+  <div class="navwrap">
+   <button class="nav" data-nav="crash">🚀 クラッシュ</button>
+   <div class="sub" id="sub">
+    <button data-mode="beginner">初心者</button>
+    <button data-mode="pro">プロ</button>
+    <button data-mode="hacker">ハッカー</button>
+   </div>
+  </div>
+  <button class="nav" data-nav="ranking">🏆 ランキング</button>
+  <button class="nav" data-nav="user">👤 ユーザー</button>
+  <button class="nav" data-nav="code">🎁 受取コード</button>
+  <div class="navmsg" id="navmsg"></div>
+ </nav>
+ <main class="container">
+  <div class="page on" id="page-home"><div class="panel"><h2>ようこそ</h2><p class="note">左のメニューの「クラッシュ」から、遊ぶモードを選んでください。</p></div></div>
+  <div class="page" id="page-pro">
  <div class="panel">
   <div class="top">
-   <h2>Crash</h2>
+   <h2 id="gameTitle">Crash</h2>
    <div class="status" id="status">待機中</div>
   </div>
   <p class="note">ゲーム内コインだけで遊べます。現実のお金とは関係ありません。倍率が上がっている間に CASH OUT しよう!</p>
@@ -105,6 +150,43 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </div>
 
  <div class="panel">
+  <h3>CRASH HISTORY</h3>
+  <div class="history" id="history">
+   <div class="history-item">---</div>
+  </div>
+ </div>
+  </div>
+  <div class="page" id="page-soon"><div class="panel"><h2 id="soonTitle"></h2><p class="note">準備中です。もう少しお待ちください。</p></div></div>
+  <div class="page" id="page-ranking">
+ <div class="panel">
+  <h2>👑 長者番付</h2>
+  <p class="note">持っているコインが多い順です。1時間ごとに更新されます。(上位50人)</p>
+  <p class="note" id="rankTime"></p>
+  <div id="rankList" style="margin-top:16px"></div>
+ </div>
+  </div>
+  <div class="page" id="page-user">
+ <div class="panel" id="acctOut">
+  <h3>アカウント</h3>
+  <p class="note">この端末(ブラウザ)の中だけに保存されます。パスワードは強力な方式で暗号化して保存します。アカウントを作ると、いま持っているコインはそのまま引き継がれます。</p>
+  <div class="bet">
+   <div class="betrow"><label>ID</label><input id="accId" type="text" maxlength="20" autocomplete="username" autocapitalize="off" placeholder="英数字と_ 3〜20文字"></div>
+   <div class="betrow"><label>パスワード</label><input id="accPw" type="password" maxlength="64" autocomplete="new-password" placeholder="8文字以上"></div>
+   <div class="betrow" id="accNameRow"><label>ディスプレイネーム</label><input id="accName" type="text" maxlength="12" autocomplete="off" placeholder="1〜12文字"></div>
+  </div>
+  <div class="controls">
+   <button class="start" id="accSubmit">アカウント作成</button>
+   <button class="reset" id="accToggle">ログインへ</button>
+  </div>
+  <div class="codemsg" id="accMsg"></div>
+ </div>
+ <div class="panel" id="acctIn" style="display:none">
+  <h3>アカウント</h3>
+  <p style="font-size:20px;font-weight:bold" id="accShowName"></p>
+  <p class="note">ID: <span id="accShowId"></span></p>
+  <div class="controls"><button class="reset" id="accLogout">ログアウト</button></div>
+ </div>
+ <div class="panel">
   <h3>MY STATUS</h3>
   <div class="stats">
    <div class="stat">
@@ -123,17 +205,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </div>
 
  <div class="panel">
-  <h3>CRASH HISTORY</h3>
-  <div class="history" id="history">
-   <div class="history-item">---</div>
-  </div>
- </div>
-
- <div class="panel">
   <h3>COIN LOG</h3>
   <div class="log" id="log"></div>
  </div>
-
+  </div>
+  <div class="page" id="page-code">
  <div class="panel">
   <h3>CODE</h3>
   <p style="color:#9baac1;font-size:13px">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
@@ -143,7 +219,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <div class="codemsg" id="codemsg"></div>
  </div>
-
+  </div>
+ </main>
 </div>
 
 <script>
@@ -158,19 +235,13 @@ const themes=[
  {id:"green",name:"Emerald",price:1500,bg:"#081b16",game:"#164a39"}
 ];
 
-let saved=null;
-try{saved=JSON.parse(localStorage.getItem("crashDemoData")||"null")}catch(e){}
+// コインなどのデータはアカウントごとに保存(ログインしていない時は「ゲスト」用)
+function dataKey(){const k=getSession();return k?"crashData:"+k:"crashDemoData"}
+function defaultData(){return {coins:1000,total:0,plays:0,owned:["default"],selected:"default",history:[],logs:[]}}
+function loadData(){let s=null;try{s=JSON.parse(localStorage.getItem(dataKey())||"null")}catch(e){}return s||defaultData()}
+let data=loadData();
 
-let data=saved||{
- coins:1000,
- total:0,
- plays:0,
- owned:["default"],
- selected:"default",
- history:[],
- logs:[]
-};
-
+let mode="pro";
 let running=false,animation=null,startTime=0,crashTime=0,crashMult=1,current=1;
 let points=[],finished=false,bet=0,cashed=0,payout=0,autoAt=0;
 
@@ -178,7 +249,7 @@ const canvas=$("chart");
 const ctx=canvas.getContext("2d");
 
 function save(){
- try{localStorage.setItem("crashDemoData",JSON.stringify(data))}catch(e){}
+ try{localStorage.setItem(dataKey(),JSON.stringify(data))}catch(e){}
  updateUI();
 }
 
@@ -198,10 +269,11 @@ function updateUI(){
  $("refill").textContent=left>0?"🆘 コインが少ないので 500 コイン補充(あと"+left+"回)":"補充は3回までです(使い切りました)";
 
  $("history").innerHTML="";
- if(!data.history.length){
+ const H=getHist();
+ if(!H.length){
   $("history").innerHTML='<div class="history-item">---</div>';
  }else{
-  data.history.slice(0,12).forEach(v=>{
+  H.slice(0,12).forEach(v=>{
    let el=document.createElement("div");
    el.className="history-item "+(v>=2?"green":"");
    el.textContent=v.toFixed(2)+"x";
@@ -290,10 +362,46 @@ function draw(){
  ctx.fill();
 }
 
-// クラッシュ倍率(還元率92%)
+// ===== モード別のクラッシュ確率 =====
+// どのモードも同じコイン(data.coins)を使います。
+// p0=1.00x(即クラッシュ)の確率 / b=[確率,最小倍率,最大倍率] 各区間の中は 1/x 型(倍率が高いほど出にくい)
+const MAX_MULT=100; // 最大倍率(上げたい場合はここを変更)
+const MODES={
+ beginner:{name:"初心者",tag:"甘デジ",p0:0.001,b:[
+  {p:0.650,a:1.01,b:2},{p:0.250,a:2,b:5},{p:0.070,a:5,b:10},{p:0.029,a:10,b:MAX_MULT}]},
+ pro:{name:"プロ",tag:"",p0:0.001,b:[
+  {p:0.511,a:1.01,b:2},{p:0.296,a:2,b:5},{p:0.092,a:5,b:10},{p:0.100,a:10,b:MAX_MULT}]},
+ hacker:{name:"ハッカー",tag:"ミドルタイプ",p0:0.005,b:[
+  {p:0.435,a:1.01,b:2},{p:0.300,a:2,b:5},{p:0.140,a:5,b:10},{p:0.120,a:10,b:MAX_MULT}]}
+};
 function crashPoint(){
- const r=Math.random();
- return Math.min(100,Math.max(1,Math.floor(92/(1-r))/100));
+ const M=MODES[mode];
+ let r=Math.random();
+ if(r<M.p0)return 1;
+ r-=M.p0;
+ for(const k of M.b){
+  if(r<k.p){
+   const u=r/k.p;
+   const x=1/(1/k.a-u*(1/k.a-1/k.b));
+   return Math.min(k.b-0.01,Math.max(k.a,Math.floor(x*100)/100));
+  }
+  r-=k.p;
+ }
+ return 2;
+}
+// 履歴はモードごとに分けて保存(プロは今までの data.history をそのまま使用)
+function getHist(){
+ if(mode==="pro"){data.history=data.history||[];return data.history}
+ data.hist=data.hist||{};
+ return data.hist[mode]=data.hist[mode]||[];
+}
+function setMode(m){
+ if(running||!MODES[m])return;
+ mode=m;
+ const M=MODES[m];
+ $("gameTitle").textContent="Crash ・ "+M.name;
+ reset();
+ updateUI();
 }
 
 function setBtn(){
@@ -397,8 +505,9 @@ function finish(){
   addLog("負け | "+crashMult.toFixed(2)+"x | -"+bet.toLocaleString()+"コイン");
  }
 
- data.history.unshift(crashMult);
- data.history=data.history.slice(0,30);
+ const H=getHist();
+ H.unshift(crashMult);
+ H.length=Math.min(H.length,30);
 
  draw();
  setBtn();
@@ -441,7 +550,7 @@ $("start").addEventListener("click",()=>{
 $("reset").addEventListener("click",reset);
 window.addEventListener("resize",()=>{resize();fxResize()});
 window.addEventListener("keydown",e=>{
- if(e.code==="Space"&&document.activeElement.tagName!=="INPUT"&&!$("start").disabled){
+ if(e.code==="Space"&&$("page-pro").classList.contains("on")&&document.activeElement.tagName!=="INPUT"&&!$("start").disabled){
   e.preventDefault();
   $("start").click();
  }
@@ -456,7 +565,8 @@ const CODES={
  "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df": 500,
  "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f": 1000,
  "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced": 300,
- "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6": 100000
+ "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6": 100000,
+ "ac00bbc560da3b6ec80a706237ff7ac1f590e4ae89a9ae4cf573d03401f19dfe": 100000000000
 };
 function sha256(ascii){
  const rr=(v,a)=>(v>>>a)|(v<<(32-a));
@@ -487,14 +597,16 @@ function sha256(ascii){
 }
 // 同じフォルダの codes.json があれば、そのコードも使えるようにする(後から増やす用)
 try{fetch("codes.json?"+Date.now()).then(r=>r.ok?r.json():{}).then(j=>Object.assign(CODES,j)).catch(()=>{})}catch(e){}
+function usedList(){let u=[];try{u=JSON.parse(localStorage.getItem("crashUsed")||"[]")}catch(e){}return Array.isArray(u)?u:[]}
 function redeem(){
  const c=$("code").value.toUpperCase().replace(/[^A-Z0-9]/g,""),m=$("codemsg");
- data.used=data.used||[];
+ const usedAll=usedList().concat(data.used||[]);
  if(!c){m.style.color="#9baac1";m.textContent="コードを入力してください";return}
  const h=sha256(SALT+c);
  if(!(h in CODES)){m.style.color="#ff647c";m.textContent="コードが違います";return}
- if(data.used.includes(h)){m.style.color="#ff647c";m.textContent="このコードはもう使っています";return}
- data.used.push(h);
+ if(usedAll.includes(h)){m.style.color="#ff647c";m.textContent="このコードはもう使っています";return}
+ data.used=data.used||[];data.used.push(h);
+ try{localStorage.setItem("crashUsed",JSON.stringify(usedList().concat([h])))}catch(e){}
  data.coins+=CODES[h];
  addLog("コード使用 | +"+CODES[h].toLocaleString()+"コイン");
  save();
@@ -569,6 +681,199 @@ function rainLoop(t){
  if(rain.length)requestAnimationFrame(rainLoop);
  else{rainOn=false;fctx.clearRect(0,0,innerWidth,innerHeight)}
 }
+
+// ===== アカウント =====
+// この端末のlocalStorageにだけ保存。パスワードは平文で保存せず、ランダムなソルト付きSHA-256(1000回)にしています。
+let accMode="create";
+const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+function getAccts(){try{return JSON.parse(localStorage.getItem("crashAccounts")||"{}")||{}}catch(e){return {}}}
+function putAccts(a){try{localStorage.setItem("crashAccounts",JSON.stringify(a));return true}catch(e){return false}}
+function getSession(){try{return sessionStorage.getItem("crashSession")||""}catch(e){return ""}}
+function setSession(k){try{if(k)sessionStorage.setItem("crashSession",k);else sessionStorage.removeItem("crashSession")}catch(e){}}
+// 以前の版で残っている「ずっとログイン」の記録は消す
+try{localStorage.removeItem("crashSession")}catch(e){}
+function randSalt(){
+ const a=new Uint8Array(16);
+ try{crypto.getRandomValues(a)}catch(e){for(let i=0;i<16;i++)a[i]=Math.floor(Math.random()*256)}
+ return Array.from(a,x=>("0"+x.toString(16)).slice(-2)).join("");
+}
+function pwHash(salt,pw){
+ const bytes=String.fromCharCode(...new TextEncoder().encode(pw));
+ let h=sha256("nx-acct:"+salt+":"+bytes);
+ for(let i=0;i<1000;i++)h=sha256(h+salt);
+ return h;
+}
+// --- 安全対策 ---
+// ・パスワードは PBKDF2-SHA256(210,000回)で保存(古いアカウントはログイン時に自動で切り替え)
+// ・ログインに5回失敗すると一定時間ロック(失敗が続くほど長くなる)
+// ・ログイン状態はタブを閉じると消える
+const SUBTLE_OK=!!(window.crypto&&crypto.subtle&&window.isSecureContext);
+const RESERVED=["__proto__","constructor","prototype","tostring","valueof","hasownproperty"];
+const WEAK=["password","12345678","123456789","1234567890","qwertyui","qwerty123","password1","abcd1234","11111111","00000000","iloveyou","letmein1"];
+const MAX_FAIL=5;
+async function pwHashV2(salt,pw){
+ const enc=new TextEncoder();
+ const k=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveBits"]);
+ const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:enc.encode("nx-acct2:"+salt),iterations:210000},k,256);
+ return Array.from(new Uint8Array(bits),x=>("0"+x.toString(16)).slice(-2)).join("");
+}
+function eq(a,b){
+ a=String(a);b=String(b);
+ let d=a.length^b.length;
+ for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);
+ return d===0;
+}
+function getFails(){try{const f=JSON.parse(localStorage.getItem("crashFails")||"{}");return f&&typeof f==="object"?f:{}}catch(e){return {}}}
+function putFails(f){try{if(Object.keys(f).length>200)f={};localStorage.setItem("crashFails",JSON.stringify(f))}catch(e){}}
+function switchData(){
+ data=loadData();reset();
+ applyTheme(themes.some(t=>t.id===data.selected)?data.selected:"default");
+}
+function renderAcct(){
+ const all=getAccts(),k=getSession(),a=hasOwn(all,k)?all[k]:null,c=accMode==="create";
+ $("acctIn").style.display=a?"block":"none";
+ $("acctOut").style.display=a?"none":"block";
+ $("who").textContent=a?a.name:"";
+ if(a){$("accShowName").textContent=a.name;$("accShowId").textContent=a.id}
+ $("accNameRow").style.display=c?"flex":"none";
+ $("accSubmit").textContent=c?"アカウント作成":"ログイン";
+ $("accToggle").textContent=c?"ログインへ":"新規作成へ";
+ $("accPw").autocomplete=c?"new-password":"current-password";
+}
+let accBusy=false;
+async function accSubmit(){
+ if(accBusy)return;
+ const m=$("accMsg"),bad=t=>{m.style.color="#ff647c";m.textContent=t};
+ const id=$("accId").value.trim(),pw=$("accPw").value,key=id.toLowerCase();
+ if(!/^[A-Za-z0-9_]{3,20}$/.test(id))return bad("IDは英数字と_で3〜20文字にしてください");
+ if(RESERVED.includes(key))return bad("このIDは使えません");
+ accBusy=true;$("accSubmit").disabled=true;
+ try{
+  if(accMode==="create"){
+   const name=$("accName").value.trim();
+   if(pw.length<8)return bad("パスワードは8文字以上にしてください");
+   if(pw.toLowerCase()===key||WEAK.includes(pw.toLowerCase())||/^(.)\1+$/.test(pw))return bad("推測されやすいパスワードです。別のものにしてください");
+   if(!name||name.length>12)return bad("ディスプレイネームは1〜12文字にしてください");
+   if(hasOwn(getAccts(),key))return bad("このIDはもう使われています");
+   m.style.color="#9baac1";m.textContent="処理中...";
+   const salt=randSalt(),v=SUBTLE_OK?2:1;
+   const hash=v===2?await pwHashV2(salt,pw):pwHash(salt,pw);
+   const all=getAccts();
+   if(hasOwn(all,key))return bad("このIDはもう使われています");
+   all[key]={id:id,name:name,salt:salt,hash:hash,v:v,created:Date.now()};
+   if(!putAccts(all))return bad("保存できませんでした");
+   // いままで(ゲストで)持っていたコイン・履歴などをそのまま新しいアカウントに引き継ぐ
+   const carry=getSession()?defaultData():data;
+   setSession(key);data=carry;
+   try{localStorage.setItem("crashDemoData",JSON.stringify(defaultData()))}catch(e){}
+   addLog("アカウント作成 | "+name);
+   save();
+  }else{
+   const fails=getFails(),f=hasOwn(fails,key)?fails[key]:{n:0,lvl:0,until:0};
+   if(f.until>Date.now())return bad("ログインに何度も失敗したため、あと"+Math.ceil((f.until-Date.now())/60000)+"分ほど待ってからやり直してください");
+   m.style.color="#9baac1";m.textContent="処理中...";
+   const all=getAccts(),a=hasOwn(all,key)?all[key]:null;
+   const useV2=a?a.v===2:SUBTLE_OK;
+   if(useV2&&!SUBTLE_OK)return bad("この環境ではログインできません(https か、手元のファイルとして開いてください)");
+   const salt=a?a.salt:"0000000000000000";
+   const h=useV2?await pwHashV2(salt,pw):pwHash(salt,pw);
+   if(!a||!eq(h,a.hash)){
+    f.n=(f.n||0)+1;
+    if(f.n>=MAX_FAIL){f.lvl=(f.lvl||0)+1;f.n=0;f.until=Date.now()+Math.min(60,5*Math.pow(2,f.lvl-1))*60000}
+    fails[key]=f;putFails(fails);
+    return bad(f.until>Date.now()?"ログインに何度も失敗したため、しばらくロックしました":"IDかパスワードが違います");
+   }
+   delete fails[key];putFails(fails);
+   if(a.v!==2&&SUBTLE_OK){ // 古い保存方式のアカウントを強い方式に切り替え
+    const s2=randSalt(),h2=await pwHashV2(s2,pw),all2=getAccts();
+    if(hasOwn(all2,key)){all2[key].salt=s2;all2[key].hash=h2;all2[key].v=2;putAccts(all2)}
+   }
+  }
+  setSession(key);switchData();
+  $("accPw").value="";$("accName").value="";m.textContent="";
+  renderAcct();
+ }catch(e){
+  bad("エラーが起きました。もう一度試してください");
+ }finally{
+  accBusy=false;$("accSubmit").disabled=false;
+ }
+}
+$("accSubmit").addEventListener("click",accSubmit);
+["accId","accPw","accName"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter")accSubmit()}));
+$("accToggle").addEventListener("click",()=>{accMode=accMode==="create"?"login":"create";$("accMsg").textContent="";renderAcct()});
+$("accLogout").addEventListener("click",()=>{setSession("");accMode="login";switchData();renderAcct()});
+renderAcct();
+
+// ===== 長者番付(1時間ごとに更新) =====
+const RK_KEY="crashRanking",HOUR=3600000;
+function rankBuild(){
+ const all=getAccts(),list=[];
+ for(const k in all){
+  if(!hasOwn(all,k))continue;
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem("crashData:"+k)||"null")}catch(e){}
+  list.push({k:k,name:all[k].name,coins:d&&typeof d.coins==="number"?d.coins:1000});
+ }
+ list.sort((a,b)=>b.coins-a.coins);
+ return list.slice(0,50);
+}
+function rankTick(){
+ const slot=Math.floor(Date.now()/HOUR);
+ let r=null;
+ try{r=JSON.parse(localStorage.getItem(RK_KEY)||"null")}catch(e){}
+ if(!r||r.slot!==slot||!Array.isArray(r.list)){
+  r={slot:slot,list:rankBuild()};
+  try{localStorage.setItem(RK_KEY,JSON.stringify(r))}catch(e){}
+ }
+ return r;
+}
+function renderRanking(){
+ const r=rankTick(),me=getSession(),box=$("rankList");
+ const hm=ms=>new Date(ms).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+ $("rankTime").textContent="最終更新 "+hm(r.slot*HOUR)+" / 次の更新 "+hm((r.slot+1)*HOUR);
+ box.innerHTML="";
+ if(!r.list.length){
+  const e=document.createElement("div");e.className="rank-empty";
+  e.textContent="まだ誰も載っていません。「ユーザー」でアカウントを作ると、次の更新から載ります。";
+  box.appendChild(e);return;
+ }
+ r.list.forEach((x,i)=>{
+  const row=document.createElement("div");row.className="rank-row"+(x.k===me?" me":"");
+  const no=document.createElement("span");no.className="rk-no";no.textContent=["🥇","🥈","🥉"][i]||(i+1)+"位";
+  const nm=document.createElement("span");nm.className="rk-name";nm.textContent=x.name;
+  const cn=document.createElement("span");cn.className="rk-coins";cn.textContent="🪙 "+x.coins.toLocaleString();
+  row.append(no,nm,cn);box.appendChild(row);
+ });
+}
+rankTick();
+setInterval(()=>{if($("page-ranking").classList.contains("on"))renderRanking();else rankTick()},30000);
+
+// ===== メニュー =====
+function showPage(id,title){
+ if(running){$("navmsg").textContent="プレイ中は移動できません";return false}
+ $("navmsg").textContent="";
+ document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id==="page-"+id));
+ if(title)$("soonTitle").textContent=title;
+ if(id==="pro")resize();
+ if(id==="ranking")renderRanking();
+ return true;
+}
+function setNav(key){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.nav===key))}
+function closeSub(){$("sub").classList.remove("open")}
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
+ const k=b.dataset.nav;
+ if(k==="crash"){$("sub").classList.toggle("open");return}
+ closeSub();
+ const ok=showPage(k);
+ if(ok)setNav(k);
+});
+document.querySelectorAll(".sub button").forEach(b=>b.onclick=()=>{
+ const m=b.dataset.mode;
+ closeSub();
+ const ok=showPage("pro");
+ if(ok){setMode(m);setNav("crash")}
+});
+document.addEventListener("click",e=>{if(!e.target.closest(".navwrap"))closeSub()});
 
 fxResize();
 resize();
