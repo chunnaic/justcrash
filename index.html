@@ -90,9 +90,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
  <div class="header-right">
   <div>
    <div class="status" id="who"></div>
-   <div class="status" id="syncStatus">ゲスト・端末内保存</div>
+   <div class="status" id="syncStatus">起動中…</div>
   </div>
-  <div class="balance">🪙 <span id="coins">1,000</span></div>
+  <div class="balance">🪙 <span id="coins">---</span></div>
  </div>
 </header>
 
@@ -116,6 +116,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="panel sync-panel" id="syncPanel">
    <p id="syncError"></p>
    <button class="reset" id="retrySave">保存を再試行</button>
+   <button class="reset" id="retryRestore" style="display:none">
+    自動ログインを再試行
+   </button>
   </div>
 
   <div class="page on" id="page-home">
@@ -123,6 +126,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <h2>ようこそ</h2>
     <p class="note">左のメニューの「クラッシュ」から、遊ぶモードを選んでください。</p>
     <p class="note">ログイン中のデータは自動でクラウド保存します。ページを閉じる前に、上部が「クラウド保存済み」になっていることを確認してください。</p>
+    <p class="note">ログイン状態は最終アクセスから14日間保持します。</p>
    </div>
   </div>
 
@@ -185,7 +189,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
    <div class="panel" id="acctOut">
     <h3>アカウント</h3>
     <p class="note">アカウントとログイン中のゲームデータはサーバーで管理します。ログイン時はサーバーのデータを読み込みます。ゲストや旧版の端末内データは引き継ぎません。</p>
-    <p class="note">再読み込み後は再ログインしてください。同じアカウントで複数の画面から同時に遊ばないでください。</p>
+    <p class="note">ログイン状態は最終アクセスから14日間保持します。サイトを開いたときやプレイ結果を保存したときに期限を延長します。共有端末では利用後にログアウトしてください。同じアカウントで複数の画面から同時に遊ばないでください。</p>
 
     <div class="bet">
      <div class="betrow">
@@ -214,6 +218,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <p style="font-size:20px;font-weight:bold" id="accShowName"></p>
     <p class="note">ID: <span id="accShowId"></span></p>
     <p class="note">ログイン中のコイン・履歴は自動でクラウド保存します。</p>
+    <p class="note" id="sessionInfo"></p>
+    <p class="note" id="sessionWarning"></p>
     <div class="controls">
      <button class="reset" id="accLogout">保存してログアウト</button>
     </div>
@@ -262,12 +268,17 @@ const $=id=>document.getElementById(id);
 
 const SUPABASE_URL="https://gvxagesbmqkszjrvdtxi.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_0Tnq36DXrrS8dB-4dITTPw_hmug2OIN";
+const SESSION_KEY="nexus:justcrash:session:v1";
 
 let nexusAccount=null;
 let nexusToken="";
 let cloudUpdatedAt="";
+let sessionExpiresAt="";
+let sessionWarning="";
 let accMode="login";
 let accBusy=false;
+let restoring=false;
+let restoreError="";
 
 let localVersion=0;
 let savedVersion=0;
@@ -275,6 +286,87 @@ let saveTimer=null;
 let savePromise=null;
 let saveError="";
 let saveConflict=false;
+let saveAuthExpired=false;
+
+function rememberSession(token,expiresAt){
+ if(
+  typeof token!=="string"||
+  !/^[a-f0-9]{64}$/.test(token)||
+  typeof expiresAt!=="string"||
+  !Number.isFinite(Date.parse(expiresAt))
+ ){
+  return false;
+ }
+
+ try{
+  localStorage.setItem(
+   SESSION_KEY,
+   JSON.stringify({
+    token,
+    expires_at:expiresAt
+   })
+  );
+  return true;
+ }catch{
+  return false;
+ }
+}
+
+function forgetSession(){
+ try{
+  localStorage.removeItem(SESSION_KEY);
+ }catch{}
+}
+
+function readSession(){
+ try{
+  const value=JSON.parse(
+   localStorage.getItem(SESSION_KEY)||"null"
+  );
+
+  if(!value)return null;
+
+  if(
+   typeof value.token!=="string"||
+   !/^[a-f0-9]{64}$/.test(value.token)||
+   typeof value.expires_at!=="string"||
+   !Number.isFinite(Date.parse(value.expires_at))
+  ){
+   forgetSession();
+   return null;
+  }
+
+  // 有効期限はサーバーで判定する
+  return value;
+ }catch{
+  forgetSession();
+  return null;
+ }
+}
+
+function updateRememberedSession(token,expiresAt){
+ sessionExpiresAt=expiresAt;
+
+ const ok=rememberSession(token,expiresAt);
+
+ sessionWarning=ok
+  ?""
+  :"このブラウザではログイン状態を保持できません。次回は再ログインが必要です。";
+
+ renderSessionInfo();
+}
+
+function renderSessionInfo(){
+ $("sessionInfo").textContent=
+  nexusAccount&&sessionExpiresAt
+   ?"ログイン期限: "+
+    new Date(sessionExpiresAt).toLocaleString()+
+    "（アクセス時に延長）"
+   :"";
+
+ $("sessionWarning").textContent=sessionWarning;
+ $("sessionWarning").style.color="#ffcf78";
+}
 
 async function nexusRequest(action,values={},token=""){
  const headers={
@@ -309,7 +401,10 @@ async function nexusRequest(action,values={},token=""){
   }
 
   if(!res.ok){
-   const error=new Error(result.error||"通信に失敗しました");
+   const error=new Error(
+    result.error||"通信に失敗しました"
+   );
+
    error.status=res.status;
    error.code=result.code||"";
    throw error;
@@ -319,7 +414,7 @@ async function nexusRequest(action,values={},token=""){
  }catch(error){
   if(error.name==="AbortError"){
    throw new Error(
-    "通信がタイムアウトしました。保存状態を確認してください"
+    "通信がタイムアウトしました。接続と保存状態を確認してください"
    );
   }
 
@@ -377,7 +472,63 @@ function normalizeData(value){
   throw new Error("保存データの形式を確認できませんでした");
  }
 
+ if(
+  !result.history.every(
+   n=>typeof n==="number"&&Number.isFinite(n)&&n>=1&&n<=100
+  )||
+  !result.logs.every(line=>typeof line==="string")||
+  !result.hist||
+  typeof result.hist!=="object"||
+  Array.isArray(result.hist)
+ ){
+  throw new Error("保存データの形式を確認できませんでした");
+ }
+
+ for(const key of ["beginner","hacker"]){
+  if(
+   Object.prototype.hasOwnProperty.call(result.hist,key)&&
+   (
+    !Array.isArray(result.hist[key])||
+    !result.hist[key].every(
+     n=>typeof n==="number"&&Number.isFinite(n)&&n>=1&&n<=100
+    )
+   )
+  ){
+   throw new Error("モード別履歴を確認できませんでした");
+  }
+ }
+
  return result;
+}
+
+function readServerData(result){
+ if(
+  !result||
+  !result.account||
+  typeof result.account.id!=="string"||
+  typeof result.account.username!=="string"||
+  typeof result.account.display_name!=="string"||
+  typeof result.updated_at!=="string"||
+  !Number.isFinite(Date.parse(result.updated_at))||
+  typeof result.expires_at!=="string"||
+  !Number.isFinite(Date.parse(result.expires_at))||
+  !result.game_data||
+  typeof result.game_data!=="object"||
+  Array.isArray(result.game_data)
+ ){
+  throw new Error("ログイン結果を確認できませんでした");
+ }
+
+ for(const key of ["coins","total","plays"]){
+  if(
+   !Number.isSafeInteger(result.game_data[key])||
+   result.game_data[key]<0
+  ){
+   throw new Error("サーバーの残高データを確認できませんでした");
+  }
+ }
+
+ return normalizeData(result.game_data);
 }
 
 function loadGuestData(){
@@ -421,7 +572,7 @@ function dirty(){
 }
 
 function blocked(){
- return accBusy||!!saveError;
+ return accBusy||!!saveError||!!restoreError;
 }
 
 function writeLocalBackup(){
@@ -457,7 +608,13 @@ function updateSyncUI(){
  const status=$("syncStatus");
  const panel=$("syncPanel");
 
- if(!nexusAccount){
+ if(restoring){
+  status.textContent="自動ログイン確認中…";
+  status.style.color="#ffc94d";
+ }else if(restoreError){
+  status.textContent="自動ログイン確認失敗";
+  status.style.color="#ff647c";
+ }else if(!nexusAccount){
   status.textContent="ゲスト・端末内保存";
   status.style.color="#9baac1";
  }else if(saveError){
@@ -474,18 +631,36 @@ function updateSyncUI(){
   status.style.color="#55e6a5";
  }
 
- panel.style.display=saveError?"block":"none";
+ panel.style.display=
+  saveError||restoreError?"block":"none";
 
- $("syncError").textContent=saveError
-  ?saveError+(saveConflict
-   ?" この画面の未保存データは自動では統合されません。ページを開き直し、再ログインして最新データを確認してください。"
-   :" 次のプレイを止めています。接続を確認して「保存を再試行」を押してください。再読み込みすると未保存の変更は復元されません。")
-  :"";
+ if(restoreError){
+  $("syncError").textContent=restoreError;
+ }else if(saveAuthExpired){
+  $("syncError").textContent=
+   saveError+
+   " 未保存の変更は自動では復元されません。"+
+   "画面を残したまま保存状態を確認してください。";
+ }else{
+  $("syncError").textContent=saveError
+   ?saveError+(saveConflict
+    ?" この画面の未保存データは自動では統合されません。ページを開き直して最新データを確認してください。"
+    :" 次のプレイを止めています。接続を確認して「保存を再試行」を押してください。再読み込みすると未保存の変更は復元されません。")
+   :"";
+ }
 
  $("retrySave").style.display=
-  saveConflict?"none":"inline-block";
+  saveError&&!saveConflict&&!saveAuthExpired
+   ?"inline-block"
+   :"none";
 
  $("retrySave").disabled=!!savePromise||accBusy;
+
+ $("retryRestore").style.display=
+  restoreError?"inline-block":"none";
+
+ $("retryRestore").disabled=accBusy;
+ renderSessionInfo();
 }
 
 async function flushCloud(){
@@ -513,12 +688,19 @@ async function flushCloud(){
      token
     );
 
-    if(typeof result.updated_at!=="string"){
+    if(
+     typeof result.updated_at!=="string"||
+     !Number.isFinite(Date.parse(result.updated_at))||
+     typeof result.expires_at!=="string"||
+     !Number.isFinite(Date.parse(result.expires_at))
+    ){
      throw new Error("保存後の更新情報を確認できませんでした");
     }
 
     cloudUpdatedAt=result.updated_at;
     savedVersion=version;
+
+    updateRememberedSession(token,result.expires_at);
    }
   }catch(error){
    saveError=error instanceof Error
@@ -526,6 +708,12 @@ async function flushCloud(){
     :"クラウド保存に失敗しました";
 
    saveConflict=error.code==="SAVE_CONFLICT";
+   saveAuthExpired=error.status===401;
+
+   if(saveAuthExpired){
+    forgetSession();
+   }
+
    throw error;
   }
  })();
@@ -543,7 +731,12 @@ async function flushCloud(){
 }
 
 $("retrySave").addEventListener("click",async()=>{
- if(accBusy||savePromise||saveConflict)return;
+ if(
+  accBusy||
+  savePromise||
+  saveConflict||
+  saveAuthExpired
+ )return;
 
  saveError="";
  updateUI();
@@ -555,10 +748,18 @@ $("retrySave").addEventListener("click",async()=>{
 });
 
 function updateUI(){
- $("coins").textContent=data.coins.toLocaleString();
- $("coinStat").textContent=data.coins.toLocaleString();
- $("total").textContent=data.total.toLocaleString();
- $("plays").textContent=data.plays;
+ const checking=restoring||!!restoreError;
+
+ $("coins").textContent=
+  checking?"---":data.coins.toLocaleString();
+
+ $("coinStat").textContent=
+  checking?"---":data.coins.toLocaleString();
+
+ $("total").textContent=
+  checking?"---":data.total.toLocaleString();
+
+ $("plays").textContent=checking?"---":data.plays;
 
  $("bet").disabled=running||blocked();
  $("auto").disabled=running||blocked();
@@ -568,12 +769,12 @@ function updateUI(){
   button.disabled=running||blocked();
  });
 
- $("redeem").disabled=blocked();
+ $("redeem").disabled=blocked()||redeemBusy;
 
  const left=Math.max(0,3-(data.refills||0));
 
  $("refill").style.display=
-  data.coins<10&&!running?"block":"none";
+  !checking&&data.coins<10&&!running?"block":"none";
 
  $("refill").disabled=left<=0||blocked();
 
@@ -582,7 +783,7 @@ function updateUI(){
   :"補充は3回までです(使い切りました)";
 
  $("history").innerHTML="";
- const history=getHist();
+ const history=checking?[]:getHist();
 
  if(!history.length){
   $("history").innerHTML=
@@ -598,11 +799,13 @@ function updateUI(){
 
  $("log").innerHTML="";
 
- data.logs.slice(0,15).forEach(line=>{
-  const el=document.createElement("div");
-  el.textContent=line;
-  $("log").appendChild(el);
- });
+ if(!checking){
+  data.logs.slice(0,15).forEach(line=>{
+   const el=document.createElement("div");
+   el.textContent=line;
+   $("log").appendChild(el);
+  });
+ }
 
  updateSyncUI();
 }
@@ -839,9 +1042,7 @@ function start(){
  cashed=0;
  payout=0;
 
- addLog(
-  "ベット | -"+bet.toLocaleString()+"コイン"
- );
+ addLog("ベット | -"+bet.toLocaleString()+"コイン");
 
  crashMult=crashPoint();
  crashTime=Math.log(crashMult)/Math.log(1.12)*500;
@@ -923,8 +1124,7 @@ function animate(){
   v:current
  });
 
- $("multiplier").textContent=
-  current.toFixed(2)+"x";
+ $("multiplier").textContent=current.toFixed(2)+"x";
 
  if(
   !crashed&&
@@ -955,9 +1155,7 @@ function finish(){
  cancelAnimationFrame(animation);
  current=crashMult;
 
- $("multiplier").textContent=
-  crashMult.toFixed(2)+"x";
-
+ $("multiplier").textContent=crashMult.toFixed(2)+"x";
  $("multiplier").style.color="#ff647c";
 
  $("status").textContent=
@@ -1164,9 +1362,7 @@ async function redeem(){
   }
 
   if((data.used||[]).length>=200){
-   throw new Error(
-    "受取コードの保存件数の上限に達しています"
-   );
+   throw new Error("受取コードの保存件数の上限に達しています");
   }
 
   const amount=CODES[hash];
@@ -1243,16 +1439,13 @@ function coinSfx(){
    const start=time+i*.07;
 
    oscillator.type="triangle";
-   oscillator.frequency.value=
-    880*Math.pow(1.19,i);
+   oscillator.frequency.value=880*Math.pow(1.19,i);
 
    oscillator.connect(gain);
    gain.connect(AC.destination);
 
    gain.gain.setValueAtTime(.12,start);
-   gain.gain.exponentialRampToValueAtTime(
-    .001,start+.2
-   );
+   gain.gain.exponentialRampToValueAtTime(.001,start+.2);
 
    oscillator.start(start);
    oscillator.stop(start+.22);
@@ -1340,25 +1533,17 @@ function renderAcct(){
  const account=nexusAccount;
  const creating=accMode==="create";
 
- $("acctIn").style.display=
-  account?"block":"none";
+ $("acctIn").style.display=account?"block":"none";
+ $("acctOut").style.display=account?"none":"block";
 
- $("acctOut").style.display=
-  account?"none":"block";
-
- $("who").textContent=
-  account?account.display_name:"";
+ $("who").textContent=account?account.display_name:"";
 
  if(account){
-  $("accShowName").textContent=
-   account.display_name;
-
-  $("accShowId").textContent=
-   account.username;
+  $("accShowName").textContent=account.display_name;
+  $("accShowId").textContent=account.username;
  }
 
- $("accNameRow").style.display=
-  creating?"flex":"none";
+ $("accNameRow").style.display=creating?"flex":"none";
 
  $("accSubmit").textContent=
   creating?"アカウント作成":"ログイン";
@@ -1385,14 +1570,36 @@ function renderAcct(){
 }
 
 function setAccountMessage(text,error=false){
- $("accMsg").style.color=
-  error?"#ff647c":"#9baac1";
-
+ $("accMsg").style.color=error?"#ff647c":"#9baac1";
  $("accMsg").textContent=text;
 }
 
+function applyServerAccount(result,token,serverData){
+ clearTimeout(saveTimer);
+ saveTimer=null;
+
+ nexusAccount=result.account;
+ nexusToken=token;
+ cloudUpdatedAt=result.updated_at;
+
+ localVersion=0;
+ savedVersion=0;
+ saveError="";
+ saveConflict=false;
+ saveAuthExpired=false;
+ restoreError="";
+
+ // ゲストや旧版のデータを自動移行しない
+ data=serverData;
+
+ updateRememberedSession(token,result.expires_at);
+ writeLocalBackup();
+ reset();
+ showTheme();
+}
+
 async function accSubmit(){
- if(accBusy||redeemBusy)return;
+ if(accBusy||redeemBusy||nexusAccount)return;
 
  if(running){
   setAccountMessage(
@@ -1402,10 +1609,7 @@ async function accSubmit(){
   return;
  }
 
- const username=$("accId").value
-  .trim()
-  .toLowerCase();
-
+ const username=$("accId").value.trim().toLowerCase();
  const password=$("accPw").value;
  const displayName=$("accName").value.trim();
  const creating=accMode==="create";
@@ -1426,23 +1630,14 @@ async function accSubmit(){
   return;
  }
 
- if(
-  creating&&
-  (!displayName||displayName.length>12)
- ){
-  setAccountMessage(
-   "表示名は1〜12文字にしてください",
-   true
-  );
+ if(creating&&(!displayName||displayName.length>12)){
+  setAccountMessage("表示名は1〜12文字にしてください",true);
   return;
  }
 
  accBusy=true;
  renderAcct();
-
- setAccountMessage(
-  "通信中です。そのままお待ちください…"
- );
+ setAccountMessage("通信中です。そのままお待ちください…");
 
  try{
   const result=await nexusRequest(
@@ -1450,53 +1645,27 @@ async function accSubmit(){
    {
     username,
     password,
-    ...(creating
-     ?{display_name:displayName}
-     :{})
+    ...(creating?{display_name:displayName}:{})
    }
   );
 
   if(
-   !result.token||
-   !result.account||
-   typeof result.updated_at!=="string"
+   typeof result.token!=="string"||
+   !/^[a-f0-9]{64}$/.test(result.token)
   ){
-   throw new Error(
-    "ログイン結果を確認できませんでした"
-   );
+   throw new Error("ログイン結果を確認できませんでした");
   }
 
-  const serverData=normalizeData(result.game_data);
+  const serverData=readServerData(result);
 
-  clearTimeout(saveTimer);
-  saveTimer=null;
-
-  nexusAccount=result.account;
-  nexusToken=result.token;
-  cloudUpdatedAt=result.updated_at;
-
-  localVersion=0;
-  savedVersion=0;
-  saveError="";
-  saveConflict=false;
-
-  // サーバーのデータを読み込みます。
-  // 旧版のブラウザ内データは自動移行しません。
-  data=serverData;
-
-  writeLocalBackup();
-  reset();
-  showTheme();
+  applyServerAccount(result,result.token,serverData);
 
   $("accPw").value="";
   $("accName").value="";
-
   setAccountMessage("");
  }catch(error){
   setAccountMessage(
-   error instanceof Error
-    ?error.message
-    :"通信に失敗しました",
+   error instanceof Error?error.message:"通信に失敗しました",
    true
   );
  }finally{
@@ -1506,20 +1675,20 @@ async function accSubmit(){
 }
 
 async function accLogout(){
- if(accBusy||redeemBusy)return;
+ if(accBusy||redeemBusy||!nexusAccount)return;
 
  if(running){
-  alert(
-   "プレイが終わってからログアウトしてください"
-  );
+  alert("プレイが終わってからログアウトしてください");
   return;
  }
 
  if(saveError){
   alert(
    saveConflict
-    ?"保存が競合しています。再ログインするにはページを開き直してください。未保存の変更は自動統合されません。"
-    :"未保存の変更があります。先に「保存を再試行」を押してください。"
+    ?"保存が競合しています。未保存の変更は自動統合されません。ページを開き直して最新データを確認してください。"
+    :saveAuthExpired
+     ?"ログイン期限が切れています。未保存の変更があるため、自動ではログアウトしません。"
+     :"未保存の変更があります。先に「保存を再試行」を押してください。"
   );
   return;
  }
@@ -1530,11 +1699,14 @@ async function accLogout(){
  try{
   await flushCloud();
 
-  await nexusRequest(
-   "logout",
-   {},
-   nexusToken
-  );
+  try{
+   await nexusRequest("logout",{},nexusToken);
+  }catch(error){
+   // すでに期限切れなら端末側のログアウトを完了する
+   if(error.status!==401)throw error;
+  }
+
+  forgetSession();
 
   clearTimeout(saveTimer);
   saveTimer=null;
@@ -1542,41 +1714,89 @@ async function accLogout(){
   nexusToken="";
   nexusAccount=null;
   cloudUpdatedAt="";
+  sessionExpiresAt="";
+  sessionWarning="";
 
   localVersion=0;
   savedVersion=0;
   saveError="";
   saveConflict=false;
+  saveAuthExpired=false;
+  restoreError="";
 
   accMode="login";
   data=loadGuestData();
 
   reset();
   showTheme();
-
-  setAccountMessage(
-   "保存してログアウトしました"
-  );
+  setAccountMessage("保存してログアウトしました");
  }catch(error){
-  alert(
-   error.message||
-   "ログアウトに失敗しました"
-  );
+  alert(error.message||"ログアウトに失敗しました");
  }finally{
   accBusy=false;
   renderAcct();
  }
 }
 
-$("accSubmit").addEventListener(
- "click",
- accSubmit
-);
+async function restoreSession(){
+ if(accBusy||running||redeemBusy||nexusAccount)return;
 
-$("accLogout").addEventListener(
- "click",
- accLogout
-);
+ const session=readSession();
+
+ if(!session){
+  restoreError="";
+  renderAcct();
+  return;
+ }
+
+ accBusy=true;
+ restoring=true;
+ restoreError="";
+ renderAcct();
+ setAccountMessage("ログイン状態を確認しています…");
+
+ try{
+  const result=await nexusRequest("me",{},session.token);
+  const serverData=readServerData(result);
+
+  applyServerAccount(result,session.token,serverData);
+  setAccountMessage("");
+ }catch(error){
+  if(error.status===401){
+   forgetSession();
+   restoreError="";
+
+   setAccountMessage(
+    "ログインの有効期限が切れました。再ログインしてください。",
+    true
+   );
+  }else{
+   // 通信障害ではセッションを削除しない
+   restoreError=
+    "自動ログインを確認できませんでした。"+
+    "接続を確認し「自動ログインを再試行」を押すか、"+
+    "ユーザー画面でログインしてください。";
+
+   setAccountMessage(
+    error.message||restoreError,
+    true
+   );
+  }
+ }finally{
+  restoring=false;
+  accBusy=false;
+  renderAcct();
+ }
+
+ if(!nexusAccount){
+  showPage("user");
+  setNav("user");
+ }
+}
+
+$("retryRestore").addEventListener("click",restoreSession);
+$("accSubmit").addEventListener("click",accSubmit);
+$("accLogout").addEventListener("click",accLogout);
 
 ["accId","accPw","accName"].forEach(id=>{
  $(id).addEventListener("keydown",event=>{
@@ -1587,10 +1807,7 @@ $("accLogout").addEventListener(
 $("accToggle").addEventListener("click",()=>{
  if(accBusy)return;
 
- accMode=accMode==="create"
-  ?"login"
-  :"create";
-
+ accMode=accMode==="create"?"login":"create";
  setAccountMessage("");
  renderAcct();
 });
@@ -1598,24 +1815,19 @@ $("accToggle").addEventListener("click",()=>{
 // ===== メニュー =====
 function showPage(id){
  if(running){
-  $("navmsg").textContent=
-   "プレイ中は移動できません";
+  $("navmsg").textContent="プレイ中は移動できません";
   return false;
  }
 
  if(accBusy){
-  $("navmsg").textContent=
-   "通信が終わるまでお待ちください";
+  $("navmsg").textContent="通信が終わるまでお待ちください";
   return false;
  }
 
  $("navmsg").textContent="";
 
  document.querySelectorAll(".page").forEach(page=>{
-  page.classList.toggle(
-   "on",
-   page.id==="page-"+id
-  );
+  page.classList.toggle("on",page.id==="page-"+id);
  });
 
  if(id==="pro")resize();
@@ -1642,7 +1854,6 @@ document.querySelectorAll(".nav").forEach(button=>{
 
   if(key==="crash"){
    if(accBusy)return;
-
    $("sub").classList.toggle("open");
    return;
   }
@@ -1672,14 +1883,8 @@ document.addEventListener("click",event=>{
  }
 });
 
-// 未保存の変更やプレイ中の離脱に対して警告します。
 window.addEventListener("beforeunload",event=>{
- if(
-  running||
-  dirty()||
-  savePromise||
-  accBusy
- ){
+ if(running||dirty()||savePromise||accBusy){
   event.preventDefault();
   event.returnValue="";
  }
@@ -1695,6 +1900,7 @@ $("gameTitle").textContent=
 
 renderAcct();
 setBtn();
+restoreSession();
 </script>
 </body>
 </html>
