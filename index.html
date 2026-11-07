@@ -1275,129 +1275,141 @@ window.addEventListener("keydown",event=>{
  }
 });
 
-// ===== 受取コード =====
-const SALT="nx-crash:";
-
-const CODES={
- "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df":500,
- "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f":1000,
- "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced":300,
- "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6":100000,
- "ac00bbc560da3b6ec80a706237ff7ac1f590e4ae89a9ae4cf573d03401f19dfe":100000000000
-};
-
-async function codeHash(text){
- const bytes=await crypto.subtle.digest(
-  "SHA-256",
-  new TextEncoder().encode(text)
- );
-
- return Array.from(
-  new Uint8Array(bytes),
-  value=>value.toString(16).padStart(2,"0")
- ).join("");
-}
-
-try{
- fetch("codes.json?"+Date.now())
-  .then(res=>res.ok?res.json():{})
-  .then(value=>{
-   if(
-    value&&
-    typeof value==="object"&&
-    !Array.isArray(value)
-   ){
-    for(const [key,amount] of Object.entries(value)){
-     if(
-      /^[a-f0-9]{64}$/.test(key)&&
-      Number.isSafeInteger(amount)&&
-      amount>=0
-     ){
-      CODES[key]=amount;
-     }
-    }
-   }
-  })
-  .catch(()=>{});
-}catch{}
-
+// ===== 受取コード：サーバー方式 =====
 let redeemBusy=false;
 
 async function redeem(){
  if(blocked()||redeemBusy)return;
 
- const accountId=nexusAccount?nexusAccount.id:"";
-
- const code=$("code").value
-  .toUpperCase()
-  .replace(/[^A-Z0-9]/g,"");
-
  const message=$("codemsg");
 
- if(!code){
-  message.style.color="#9baac1";
-  message.textContent="コードを入力してください";
+ function showMessage(text,error=false){
+  message.style.color=error?"#ff647c":"#55e6a5";
+  message.textContent=text;
+ }
+
+ if(!nexusAccount||!nexusToken){
+  showMessage(
+   "コードを受け取るには、ユーザー画面でログインしてください。",
+   true
+  );
+  return;
+ }
+
+ if(running){
+  showMessage(
+   "プレイが終わってから受け取ってください。",
+   true
+  );
+  return;
+ }
+
+ const code=$("code").value.trim().toUpperCase();
+
+ if(!/^[A-Z0-9]{4,32}$/.test(code)){
+  showMessage(
+   "コードは英数字で4〜32文字にしてください。",
+   true
+  );
   return;
  }
 
  redeemBusy=true;
- $("redeem").disabled=true;
+ accBusy=true;
+ renderAcct();
+
+ showMessage("保存状態を確認しています…");
+
+ // サーバーに受取要求を送ったかどうか
+ let redemptionRequested=false;
 
  try{
-  const hash=await codeHash(SALT+code);
+  // 先にゲーム中の変更を保存する。
+  // 保存に失敗した場合は受取要求を送らない。
+  await flushCloud();
 
-  if(
-   blocked()||
-   (nexusAccount?nexusAccount.id:"")!==accountId
-  ){
-   return;
-  }
+  showMessage("コードを確認しています…");
+  redemptionRequested=true;
 
-  if(!Object.prototype.hasOwnProperty.call(CODES,hash)){
-   throw new Error("コードが違います");
-  }
-
-  if((data.used||[]).includes(hash)){
-   throw new Error("このコードはもう使っています");
-  }
-
-  if((data.used||[]).length>=200){
-   throw new Error("受取コードの保存件数の上限に達しています");
-  }
-
-  const amount=CODES[hash];
-
-  if(
-   !Number.isSafeInteger(amount)||
-   !Number.isSafeInteger(data.coins+amount)
-  ){
-   throw new Error("コイン数の上限を超えます");
-  }
-
-  data.used=data.used||[];
-  data.used.push(hash);
-  data.coins+=amount;
-
-  addLog(
-   "コード使用 | +"+
-   amount.toLocaleString()+"コイン"
+  const result=await nexusRequest(
+   "gift_redeem",
+   {
+    code,
+    expected_updated_at:cloudUpdatedAt
+   },
+   nexusToken
   );
 
-  save();
+  if(
+   result.ok!==true||
+   !Number.isSafeInteger(result.amount)||
+   result.amount<=0
+  ){
+   throw new Error(
+    "受取結果を確認できませんでした。"
+   );
+  }
 
-  message.style.color="#55e6a5";
-  message.textContent=
-   "🎉 +"+amount.toLocaleString()+
-   " コインをゲットしました!";
+  // サーバーが返した最新データを検証する。
+  const serverData=readServerData({
+   ...result,
+   account:nexusAccount
+  });
+
+  // ブラウザ側ではコインを加算しない。
+  // サーバーで加算済みの残高に置き換える。
+  applyServerAccount(
+   {
+    ...result,
+    account:nexusAccount
+   },
+   nexusToken,
+   serverData
+  );
 
   $("code").value="";
+
+  showMessage(
+   "+"+result.amount.toLocaleString()+
+   "コインを受け取りました。クラウド保存済みです。"
+  );
  }catch(error){
-  message.style.color="#ff647c";
-  message.textContent=
-   error.message||"コードを確認できませんでした";
+  const text=error instanceof Error
+   ?error.message
+   :"コードを受け取れませんでした。";
+
+  if(redemptionRequested){
+   if(error.code==="SAVE_CONFLICT"){
+    saveError=text;
+    saveConflict=true;
+   }else if(error.status===401){
+    forgetSession();
+    saveError=text;
+    saveAuthExpired=true;
+   }else if(
+    typeof error.status!=="number"||
+    error.status>=500
+   ){
+    // タイムアウト等では受取が完了した可能性がある。
+    // 古い残高の保存や、続けてのプレイを止める。
+    saveError=
+     "コードの受取結果を確認できませんでした。"+
+     "受取済みの可能性があります。"+
+     "ページを開き直して最新の残高と履歴を確認してください。";
+
+    // 「保存を再試行」で古い残高を送信させない
+    saveConflict=true;
+   }
+  }
+
+  showMessage(
+   saveError||text,
+   true
+  );
  }finally{
   redeemBusy=false;
-  $("redeem").disabled=blocked();
+  accBusy=false;
+  renderAcct();
  }
 }
 
@@ -1406,7 +1418,6 @@ $("redeem").addEventListener("click",redeem);
 $("code").addEventListener("keydown",event=>{
  if(event.key==="Enter")redeem();
 });
-
 // ===== コインの雨 =====
 function fxResize(){
  const dpr=window.devicePixelRatio||1;
