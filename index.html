@@ -7,14 +7,15 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090d18;color:white;font-family:Arial,sans-serif}
-header{height:65px;background:#111827;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #293449}
+header{min-height:65px;background:#111827;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;gap:12px;border-bottom:1px solid #293449}
 .logo{font-size:23px;font-weight:900;color:#55e6a5}
+.header-right{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
 .balance{background:#202d42;padding:11px 18px;border-radius:9px;color:#55e6a5;font-weight:bold}
 .container{max-width:1100px;margin:25px auto;padding:15px}
 .panel{background:#111a2b;border:1px solid #29364d;border-radius:12px;padding:22px;margin-bottom:18px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .status{color:#9baac1;font-size:13px}
-.note{color:#9baac1;font-size:12px;margin:4px 0 0}
+.note{color:#9baac1;font-size:12px;margin:4px 0 0;line-height:1.7}
 .game{height:360px;position:relative;background:radial-gradient(ellipse at center,#172c43,#0b1220 75%);border-radius:12px;overflow:hidden;margin-top:20px}
 canvas{width:100%;height:100%}
 .multiplier{position:absolute;top:36%;width:100%;text-align:center;font-size:65px;font-weight:900;color:#55e6a5;pointer-events:none}
@@ -41,11 +42,6 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .green{color:#55e6a5}
 .history{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:15px}
 .history-item{background:#202d42;padding:12px;border-radius:7px;text-align:center;font-weight:bold}
-.store{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.theme{background:#202d42;padding:16px;border-radius:9px}
-.theme button{width:100%;margin-top:12px;background:#42d99b;color:#071b13}
-.theme button.owned{background:#34445a;color:white}
-.theme-preview{height:55px;border-radius:7px;margin-bottom:12px}
 .coderow{display:flex;gap:10px;margin-top:12px}
 .coderow input{text-transform:uppercase}
 .codemsg{margin-top:10px;font-size:13px;min-height:18px;color:#9baac1}
@@ -65,16 +61,13 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .app .container{flex:1;min-width:0;margin:10px 0}
 .page{display:none}
 .page.on{display:block}
-.rank-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#202d42;border-radius:9px;padding:13px 16px;margin-bottom:8px}
-.rank-row.me{outline:2px solid #55e6a5}
-.rank-row:nth-child(1){background:#3a3216}
-.rank-row:nth-child(2){background:#2c3340}
-.rank-row:nth-child(3){background:#35271d}
-.rk-name{flex:1;min-width:0;font-weight:bold;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rk-no{width:44px;text-align:center;color:#9baac1;font-weight:bold}
-.rk-coins{color:#55e6a5;font-weight:900;font-size:18px;white-space:nowrap}
 .rank-empty{color:#9baac1;font-size:14px;padding:14px 4px}
+.sync-panel{display:none;border-color:#7c5d28}
+.sync-panel p{margin:0;line-height:1.7;font-size:13px;color:#ffcf78}
+.sync-panel button{margin-top:10px}
+#syncStatus{font-size:12px}
 @media(max-width:600px){
+ header{padding:10px 14px}
  .app{flex-direction:column}
  .side{width:100%;border-right:0;border-bottom:1px solid #293449;display:flex;flex-wrap:wrap;gap:6px;padding:10px}
  .nav{width:auto;margin:0;padding:10px 12px;font-size:14px}
@@ -82,10 +75,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
  .navmsg{width:100%}
  .stats{grid-template-columns:1fr}
  .history{grid-template-columns:repeat(3,1fr)}
- .store{grid-template-columns:1fr}
  .multiplier{font-size:48px}
  .game{height:280px}
  .betrow label{width:100px;font-size:12px}
+ .header-right{gap:6px}
 }
 </style>
 </head>
@@ -94,8 +87,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <header>
  <div class="logo">CRASH</div>
- <div style="display:flex;align-items:center;gap:12px">
-  <div class="status" id="who"></div>
+ <div class="header-right">
+  <div>
+   <div class="status" id="who"></div>
+   <div class="status" id="syncStatus">ゲスト・端末内保存</div>
+  </div>
   <div class="balance">🪙 <span id="coins">1,000</span></div>
  </div>
 </header>
@@ -117,10 +113,16 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </nav>
 
  <main class="container">
+  <div class="panel sync-panel" id="syncPanel">
+   <p id="syncError"></p>
+   <button class="reset" id="retrySave">保存を再試行</button>
+  </div>
+
   <div class="page on" id="page-home">
    <div class="panel">
     <h2>ようこそ</h2>
     <p class="note">左のメニューの「クラッシュ」から、遊ぶモードを選んでください。</p>
+    <p class="note">ログイン中のデータは自動でクラウド保存します。ページを閉じる前に、上部が「クラウド保存済み」になっていることを確認してください。</p>
    </div>
   </div>
 
@@ -172,31 +174,18 @@ button:disabled{opacity:.4;cursor:not-allowed}
    </div>
   </div>
 
-  <div class="page" id="page-soon">
-   <div class="panel">
-    <h2 id="soonTitle"></h2>
-    <p class="note">準備中です。もう少しお待ちください。</p>
-   </div>
-  </div>
-
   <div class="page" id="page-ranking">
    <div class="panel">
     <h2>👑 長者番付</h2>
-    <p class="note">全体ランキングは準備中です。</p>
-    <p class="note" id="rankTime"></p>
-    <div id="rankList" style="margin-top:16px"></div>
+    <p class="rank-empty">全体ランキングは準備中です。</p>
    </div>
   </div>
 
   <div class="page" id="page-user">
    <div class="panel" id="acctOut">
     <h3>アカウント</h3>
-    <p class="note">
-     アカウントはサーバーで管理します。
-     旧ブラウザ内アカウントは引き継ぎません。
-     現在、コインや履歴の保存はこのブラウザ内だけです。
-     ページを再読み込みした場合は、もう一度ログインしてください。
-    </p>
+    <p class="note">アカウントとログイン中のゲームデータはサーバーで管理します。ログイン時はサーバーのデータを読み込みます。ゲストや旧版の端末内データは引き継ぎません。</p>
+    <p class="note">再読み込み後は再ログインしてください。同じアカウントで複数の画面から同時に遊ばないでください。</p>
 
     <div class="bet">
      <div class="betrow">
@@ -224,9 +213,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
     <h3>アカウント</h3>
     <p style="font-size:20px;font-weight:bold" id="accShowName"></p>
     <p class="note">ID: <span id="accShowId"></span></p>
-    <p class="note">コイン・履歴は、このブラウザ内に保存されています。別の端末とはまだ同期しません。</p>
+    <p class="note">ログイン中のコイン・履歴は自動でクラウド保存します。</p>
     <div class="controls">
-     <button class="reset" id="accLogout">ログアウト</button>
+     <button class="reset" id="accLogout">保存してログアウト</button>
     </div>
    </div>
 
@@ -257,7 +246,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="page" id="page-code">
    <div class="panel">
     <h3>CODE</h3>
-    <p style="color:#9baac1;font-size:13px">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
+    <p class="note">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
     <div class="coderow">
      <input id="code" type="text" placeholder="コードを入力" autocomplete="off" autocapitalize="characters" maxlength="20">
      <button class="start" id="redeem" style="flex:0 0 auto">受け取る</button>
@@ -268,59 +257,79 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
-// ===== Supabase 接続設定 =====
-const SUPABASE_URL = "https://gvxagesbmqkszjrvdtxi.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0Tnq36DXrrS8dB-4dITTPw_hmug2OIN";
+const SUPABASE_URL="https://gvxagesbmqkszjrvdtxi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_0Tnq36DXrrS8dB-4dITTPw_hmug2OIN";
 
-// トークンは、このページを開いている間だけメモリに保持します。
-let nexusAccount = null;
-let nexusToken = "";
-let accMode = "login";
-let accBusy = false;
+let nexusAccount=null;
+let nexusToken="";
+let cloudUpdatedAt="";
+let accMode="login";
+let accBusy=false;
 
-// ===== サーバーのアカウント処理を呼び出す =====
-async function nexusRequest(action, values = {}, token = "") {
- const headers = {
-  "Content-Type": "application/json",
-  "apikey": SUPABASE_PUBLISHABLE_KEY
+let localVersion=0;
+let savedVersion=0;
+let saveTimer=null;
+let savePromise=null;
+let saveError="";
+let saveConflict=false;
+
+async function nexusRequest(action,values={},token=""){
+ const headers={
+  "Content-Type":"application/json",
+  "apikey":SUPABASE_PUBLISHABLE_KEY
  };
 
- if (token) {
-  headers["x-nexus-token"] = token;
+ if(token){
+  headers["x-nexus-token"]=token;
  }
 
- const res = await fetch(
-  SUPABASE_URL + "/functions/v1/nexus-auth",
-  {
-   method: "POST",
-   headers,
-   body: JSON.stringify({ ...values, action })
-  }
- );
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),25000);
 
- let result;
-
- try {
-  result = await res.json();
- } catch {
-  throw new Error("サーバーからの応答を読み取れませんでした");
- }
-
- if (!res.ok) {
-  throw new Error(
-   result.error || "サーバーとの通信に失敗しました"
+ try{
+  const res=await fetch(
+   SUPABASE_URL+"/functions/v1/nexus-auth",
+   {
+    method:"POST",
+    headers,
+    body:JSON.stringify({...values,action}),
+    signal:controller.signal
+   }
   );
- }
 
- return result;
+  let result;
+
+  try{
+   result=await res.json();
+  }catch{
+   throw new Error("サーバーからの応答を読み取れませんでした");
+  }
+
+  if(!res.ok){
+   const error=new Error(result.error||"通信に失敗しました");
+   error.status=res.status;
+   error.code=result.code||"";
+   throw error;
+  }
+
+  return result;
+ }catch(error){
+  if(error.name==="AbortError"){
+   throw new Error(
+    "通信がタイムアウトしました。保存状態を確認してください"
+   );
+  }
+
+  throw error;
+ }finally{
+  clearTimeout(timeout);
+ }
 }
 
-const themes = [
+const themes=[
  {id:"default",name:"Original",price:0,bg:"#090d18",game:"#172c43"},
  {id:"purple",name:"Purple",price:300,bg:"#130c20",game:"#352052"},
  {id:"red",name:"Red",price:500,bg:"#200d16",game:"#54202c"},
@@ -329,17 +338,7 @@ const themes = [
  {id:"green",name:"Emerald",price:1500,bg:"#081b16",game:"#164a39"}
 ];
 
-// ===== ブラウザ内のゲームデータ保存 =====
-function getSession() {
- return nexusAccount ? "cloud:" + nexusAccount.id : "";
-}
-
-function dataKey() {
- const k = getSession();
- return k ? "crashData:" + k : "crashDemoData";
-}
-
-function defaultData() {
+function defaultData(){
  return {
   coins:1000,
   total:0,
@@ -347,194 +346,363 @@ function defaultData() {
   owned:["default"],
   selected:"default",
   history:[],
-  logs:[]
+  logs:[],
+  refills:0,
+  used:[],
+  hist:{}
  };
 }
 
-function loadData() {
- let saved = null;
+function normalizeData(value){
+ const base=defaultData();
 
- try {
-  saved = JSON.parse(
-   localStorage.getItem(dataKey()) || "null"
-  );
- } catch (e) {}
+ if(!value||typeof value!=="object"||Array.isArray(value)){
+  return base;
+ }
 
- return saved || defaultData();
+ const result={...base,...value};
+
+ for(const key of ["coins","total","plays"]){
+  if(!Number.isSafeInteger(result[key])||result[key]<0){
+   throw new Error("保存データの数値を確認できませんでした");
+  }
+ }
+
+ if(
+  !Array.isArray(result.owned)||
+  !Array.isArray(result.history)||
+  !Array.isArray(result.logs)||
+  !Array.isArray(result.used)
+ ){
+  throw new Error("保存データの形式を確認できませんでした");
+ }
+
+ return result;
 }
 
-let data = loadData();
+function loadGuestData(){
+ try{
+  return normalizeData(
+   JSON.parse(localStorage.getItem("crashDemoData")||"null")
+  );
+ }catch{
+  return defaultData();
+ }
+}
 
-let mode = "pro";
-let running = false;
-let animation = null;
-let startTime = 0;
-let crashTime = 0;
-let crashMult = 1;
-let current = 1;
-let points = [];
-let finished = false;
-let bet = 0;
-let cashed = 0;
-let payout = 0;
-let autoAt = 0;
+let data=loadGuestData();
 
-const canvas = $("chart");
-const ctx = canvas.getContext("2d");
+let mode="pro";
+let running=false;
+let animation=null;
+let startTime=0;
+let crashTime=0;
+let crashMult=1;
+let current=1;
+let points=[];
+let finished=false;
+let bet=0;
+let cashed=0;
+let payout=0;
+let autoAt=0;
 
-function save() {
- try {
-  localStorage.setItem(dataKey(), JSON.stringify(data));
- } catch (e) {}
+const canvas=$("chart");
+const ctx=canvas.getContext("2d");
+const fx=$("fx");
+const fctx=fx.getContext("2d");
+
+let rain=[];
+let rainOn=false;
+let rl=0;
+let AC=null;
+
+function dirty(){
+ return !!nexusAccount&&localVersion>savedVersion;
+}
+
+function blocked(){
+ return accBusy||!!saveError;
+}
+
+function writeLocalBackup(){
+ try{
+  const key=nexusAccount
+   ?"crashCloudBackup:"+nexusAccount.id
+   :"crashDemoData";
+
+  localStorage.setItem(key,JSON.stringify(data));
+ }catch{}
+}
+
+function save(){
+ writeLocalBackup();
+
+ if(nexusAccount){
+  localVersion++;
+  clearTimeout(saveTimer);
+
+  if(!saveError){
+   saveTimer=setTimeout(()=>{
+    saveTimer=null;
+    flushCloud().catch(()=>{});
+   },400);
+  }
+ }
 
  updateUI();
+ setBtn();
 }
 
-function updateUI() {
- $("coins").textContent = data.coins.toLocaleString();
- $("coinStat").textContent = data.coins.toLocaleString();
- $("total").textContent = data.total.toLocaleString();
- $("plays").textContent = data.plays;
+function updateSyncUI(){
+ const status=$("syncStatus");
+ const panel=$("syncPanel");
 
- $("bet").disabled = running || accBusy;
- $("auto").disabled = running || accBusy;
- $("reset").disabled = running || accBusy;
+ if(!nexusAccount){
+  status.textContent="ゲスト・端末内保存";
+  status.style.color="#9baac1";
+ }else if(saveError){
+  status.textContent="クラウド保存停止";
+  status.style.color="#ff647c";
+ }else if(savePromise){
+  status.textContent="クラウド保存中…";
+  status.style.color="#ffc94d";
+ }else if(dirty()){
+  status.textContent="クラウド保存待ち…";
+  status.style.color="#ffc94d";
+ }else{
+  status.textContent="クラウド保存済み";
+  status.style.color="#55e6a5";
+ }
 
- document.querySelectorAll(".chip").forEach(b => {
-  b.disabled = running || accBusy;
+ panel.style.display=saveError?"block":"none";
+
+ $("syncError").textContent=saveError
+  ?saveError+(saveConflict
+   ?" この画面の未保存データは自動では統合されません。ページを開き直し、再ログインして最新データを確認してください。"
+   :" 次のプレイを止めています。接続を確認して「保存を再試行」を押してください。再読み込みすると未保存の変更は復元されません。")
+  :"";
+
+ $("retrySave").style.display=
+  saveConflict?"none":"inline-block";
+
+ $("retrySave").disabled=!!savePromise||accBusy;
+}
+
+async function flushCloud(){
+ clearTimeout(saveTimer);
+ saveTimer=null;
+
+ if(savePromise)return savePromise;
+ if(!nexusAccount||!dirty())return;
+ if(saveError)throw new Error(saveError);
+
+ const token=nexusToken;
+
+ savePromise=(async()=>{
+  try{
+   while(dirty()){
+    const version=localVersion;
+    const snapshot=JSON.parse(JSON.stringify(data));
+
+    const result=await nexusRequest(
+     "save",
+     {
+      game_data:snapshot,
+      expected_updated_at:cloudUpdatedAt
+     },
+     token
+    );
+
+    if(typeof result.updated_at!=="string"){
+     throw new Error("保存後の更新情報を確認できませんでした");
+    }
+
+    cloudUpdatedAt=result.updated_at;
+    savedVersion=version;
+   }
+  }catch(error){
+   saveError=error instanceof Error
+    ?error.message
+    :"クラウド保存に失敗しました";
+
+   saveConflict=error.code==="SAVE_CONFLICT";
+   throw error;
+  }
+ })();
+
+ updateUI();
+ setBtn();
+
+ try{
+  await savePromise;
+ }finally{
+  savePromise=null;
+  updateUI();
+  setBtn();
+ }
+}
+
+$("retrySave").addEventListener("click",async()=>{
+ if(accBusy||savePromise||saveConflict)return;
+
+ saveError="";
+ updateUI();
+ setBtn();
+
+ try{
+  await flushCloud();
+ }catch{}
+});
+
+function updateUI(){
+ $("coins").textContent=data.coins.toLocaleString();
+ $("coinStat").textContent=data.coins.toLocaleString();
+ $("total").textContent=data.total.toLocaleString();
+ $("plays").textContent=data.plays;
+
+ $("bet").disabled=running||blocked();
+ $("auto").disabled=running||blocked();
+ $("reset").disabled=running||accBusy;
+
+ document.querySelectorAll(".chip").forEach(button=>{
+  button.disabled=running||blocked();
  });
 
- $("redeem").disabled = accBusy;
+ $("redeem").disabled=blocked();
 
- const left = Math.max(0, 3 - (data.refills || 0));
+ const left=Math.max(0,3-(data.refills||0));
 
- $("refill").style.display =
-  data.coins < 10 && !running ? "block" : "none";
+ $("refill").style.display=
+  data.coins<10&&!running?"block":"none";
 
- $("refill").disabled = left <= 0 || accBusy;
+ $("refill").disabled=left<=0||blocked();
 
- $("refill").textContent = left > 0
-  ? "🆘 コインが少ないので 500 コイン補充(あと" + left + "回)"
-  : "補充は3回までです(使い切りました)";
+ $("refill").textContent=left>0
+  ?"🆘 コインが少ないので 500 コイン補充(あと"+left+"回)"
+  :"補充は3回までです(使い切りました)";
 
- $("history").innerHTML = "";
+ $("history").innerHTML="";
+ const history=getHist();
 
- const H = getHist();
-
- if (!H.length) {
-  $("history").innerHTML =
+ if(!history.length){
+  $("history").innerHTML=
    '<div class="history-item">---</div>';
- } else {
-  H.slice(0,12).forEach(v => {
-   const el = document.createElement("div");
-   el.className = "history-item " + (v >= 2 ? "green" : "");
-   el.textContent = v.toFixed(2) + "x";
+ }else{
+  history.slice(0,12).forEach(value=>{
+   const el=document.createElement("div");
+   el.className="history-item "+(value>=2?"green":"");
+   el.textContent=value.toFixed(2)+"x";
    $("history").appendChild(el);
   });
  }
 
- $("log").innerHTML = "";
+ $("log").innerHTML="";
 
- data.logs.slice(0,15).forEach(item => {
-  const el = document.createElement("div");
-  el.textContent = item;
+ data.logs.slice(0,15).forEach(line=>{
+  const el=document.createElement("div");
+  el.textContent=line;
   $("log").appendChild(el);
  });
+
+ updateSyncUI();
 }
 
-function addLog(message) {
+function addLog(message){
  data.logs.unshift(
-  new Date().toLocaleString() + " | " + message
+  (new Date().toLocaleString()+" | "+message).slice(0,500)
  );
- data.logs = data.logs.slice(0,30);
+
+ data.logs=data.logs.slice(0,30);
 }
 
-function applyTheme(id) {
- const t = themes.find(x => x.id === id);
- if (!t) return;
+function showTheme(){
+ const theme=themes.find(
+  item=>item.id===data.selected
+ )||themes[0];
 
- document.body.style.background = t.bg;
- $("game").style.background =
-  "radial-gradient(ellipse at center," + t.game + ",#0b1220 85%)";
+ document.body.style.background=theme.bg;
 
- data.selected = id;
- save();
+ $("game").style.background=
+  "radial-gradient(ellipse at center,"+
+  theme.game+",#0b1220 85%)";
 }
 
-function resize() {
- const rect = canvas.getBoundingClientRect();
- const dpr = window.devicePixelRatio || 1;
+function resize(){
+ const rect=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
 
- canvas.width = rect.width * dpr;
- canvas.height = rect.height * dpr;
+ canvas.width=rect.width*dpr;
+ canvas.height=rect.height*dpr;
  ctx.setTransform(dpr,0,0,dpr,0,0);
+
  draw();
 }
 
-function draw() {
- const w = canvas.clientWidth;
- const h = canvas.clientHeight;
+function draw(){
+ const width=canvas.clientWidth;
+ const height=canvas.clientHeight;
 
- ctx.clearRect(0,0,w,h);
- ctx.strokeStyle = "rgba(150,180,210,.09)";
+ ctx.clearRect(0,0,width,height);
+ ctx.strokeStyle="rgba(150,180,210,.09)";
 
- for (let i=1; i<6; i++) {
-  const y = h - i*h/6;
+ for(let i=1;i<6;i++){
+  const y=height-i*height/6;
   ctx.beginPath();
   ctx.moveTo(0,y);
-  ctx.lineTo(w,y);
+  ctx.lineTo(width,y);
   ctx.stroke();
  }
 
- if (points.length < 2) return;
+ if(points.length<2)return;
 
- const max = Math.max(3,current*1.2);
- const last = points[points.length-1];
- const tmax = Math.max(4000,last.t*1.15);
+ const max=Math.max(3,current*1.2);
+ const last=points[points.length-1];
+ const tmax=Math.max(4000,last.t*1.15);
 
- const col = finished && !cashed
-  ? "#ff647c"
-  : cashed
-   ? "#ffc94d"
-   : "#55e6a5";
+ const color=finished&&!cashed
+  ?"#ff647c"
+  :cashed
+   ?"#ffc94d"
+   :"#55e6a5";
 
- const X = p => (p.t/tmax)*w;
- const Y = p => h-((p.v-1)/max)*h*.85;
+ const X=point=>point.t/tmax*width;
+ const Y=point=>height-(point.v-1)/max*height*.85;
 
  ctx.beginPath();
 
- points.forEach((p,i) => {
-  if (i===0) ctx.moveTo(X(p),Y(p));
-  else ctx.lineTo(X(p),Y(p));
+ points.forEach((point,index)=>{
+  if(index===0){
+   ctx.moveTo(X(point),Y(point));
+  }else{
+   ctx.lineTo(X(point),Y(point));
+  }
  });
 
- ctx.strokeStyle = col;
- ctx.lineWidth = 4;
- ctx.lineJoin = "round";
- ctx.shadowColor = col;
- ctx.shadowBlur = 12;
+ ctx.strokeStyle=color;
+ ctx.lineWidth=4;
+ ctx.lineJoin="round";
+ ctx.shadowColor=color;
+ ctx.shadowBlur=12;
  ctx.stroke();
- ctx.shadowBlur = 0;
+ ctx.shadowBlur=0;
 
- ctx.lineTo(X(last),h);
- ctx.lineTo(0,h);
+ ctx.lineTo(X(last),height);
+ ctx.lineTo(0,height);
  ctx.closePath();
 
- const gradient = ctx.createLinearGradient(0,0,0,h);
- gradient.addColorStop(0,col+"40");
- gradient.addColorStop(1,col+"00");
+ const gradient=ctx.createLinearGradient(0,0,0,height);
+ gradient.addColorStop(0,color+"40");
+ gradient.addColorStop(1,color+"00");
 
- ctx.fillStyle = gradient;
+ ctx.fillStyle=gradient;
  ctx.fill();
 }
 
-// ===== モード別のクラッシュ確率 =====
-const MAX_MULT = 100;
+const MAX_MULT=100;
 
-const MODES = {
+const MODES={
  beginner:{
   name:"初心者",
-  tag:"甘デジ",
   p0:0.001,
   b:[
    {p:0.650,a:1.01,b:2},
@@ -545,7 +713,6 @@ const MODES = {
  },
  pro:{
   name:"プロ",
-  tag:"",
   p0:0.001,
   b:[
    {p:0.511,a:1.01,b:2},
@@ -556,7 +723,6 @@ const MODES = {
  },
  hacker:{
   name:"ハッカー",
-  tag:"ミドルタイプ",
   p0:0.005,
   b:[
    {p:0.435,a:1.01,b:2},
@@ -567,110 +733,132 @@ const MODES = {
  }
 };
 
-function crashPoint() {
- const M = MODES[mode];
- let r = Math.random();
+function crashPoint(){
+ const config=MODES[mode];
+ let random=Math.random();
 
- if (r < M.p0) return 1;
- r -= M.p0;
+ if(random<config.p0)return 1;
 
- for (const k of M.b) {
-  if (r < k.p) {
-   const u = r/k.p;
-   const x = 1/(1/k.a-u*(1/k.a-1/k.b));
+ random-=config.p0;
+
+ for(const range of config.b){
+  if(random<range.p){
+   const u=random/range.p;
+
+   const value=1/(
+    1/range.a-u*(1/range.a-1/range.b)
+   );
 
    return Math.min(
-    k.b-0.01,
-    Math.max(k.a,Math.floor(x*100)/100)
+    range.b-0.01,
+    Math.max(range.a,Math.floor(value*100)/100)
    );
   }
 
-  r -= k.p;
+  random-=range.p;
  }
 
  return 2;
 }
 
-function getHist() {
- if (mode === "pro") {
-  data.history = data.history || [];
+function getHist(){
+ if(mode==="pro"){
+  data.history=data.history||[];
   return data.history;
  }
 
- data.hist = data.hist || {};
- data.hist[mode] = data.hist[mode] || [];
+ data.hist=data.hist||{};
+ data.hist[mode]=data.hist[mode]||[];
+
  return data.hist[mode];
 }
 
-function setMode(m) {
- if (running || accBusy || !MODES[m]) return;
+function setMode(value){
+ if(running||accBusy||!MODES[value])return;
 
- mode = m;
- $("gameTitle").textContent = "Crash ・ " + MODES[m].name;
+ mode=value;
+ $("gameTitle").textContent=
+  "Crash ・ "+MODES[mode].name;
 
  reset();
  updateUI();
 }
 
-function setBtn() {
- const b = $("start");
+function setBtn(){
+ const button=$("start");
 
- if (!running) {
-  b.textContent = "BET & START";
-  b.className = "start";
-  b.disabled = accBusy;
- } else if (!cashed) {
-  b.textContent =
-   "CASH OUT  🪙" + Math.floor(bet*current).toLocaleString();
-  b.className = "start cash";
-  b.disabled = false;
- } else {
-  b.textContent = "✅ キャッシュアウト済み";
-  b.className = "start";
-  b.disabled = true;
+ if(!running){
+  button.textContent="BET & START";
+  button.className="start";
+  button.disabled=blocked()||!!savePromise||dirty();
+ }else if(!cashed){
+  button.textContent=
+   "CASH OUT  🪙"+
+   Math.floor(bet*current).toLocaleString();
+
+  button.className="start cash";
+  button.disabled=false;
+ }else{
+  button.textContent="✅ キャッシュアウト済み";
+  button.className="start";
+  button.disabled=true;
  }
 }
 
-function start() {
- if (running || accBusy) return;
+function start(){
+ if(
+  running||
+  blocked()||
+  savePromise||
+  dirty()
+ )return;
 
  initAC();
- bet = Math.floor(+$("bet").value);
+ bet=Math.floor(+$("bet").value);
 
- if (!(bet >= 1)) {
-  $("subtitle").textContent = "ベット額を入力してください";
+ if(!Number.isSafeInteger(bet)||bet<1){
+  $("subtitle").textContent=
+   "ベット額を入力してください";
   return;
  }
 
- if (bet > data.coins) {
-  $("subtitle").textContent = "コインが足りません";
+ if(bet>data.coins){
+  $("subtitle").textContent=
+   "コインが足りません";
   return;
  }
 
- autoAt = +$("auto").value;
- if (!(autoAt >= 1.01)) autoAt = 0;
+ autoAt=+$("auto").value;
 
- data.coins -= bet;
+ if(!Number.isFinite(autoAt)||autoAt<1.01){
+  autoAt=0;
+ }
+
+ data.coins-=bet;
  data.plays++;
- cashed = 0;
- payout = 0;
+ cashed=0;
+ payout=0;
 
- addLog("ベット | -" + bet.toLocaleString() + "コイン");
+ addLog(
+  "ベット | -"+bet.toLocaleString()+"コイン"
+ );
 
- crashMult = crashPoint();
- crashTime = Math.log(crashMult)/Math.log(1.12)*500;
+ crashMult=crashPoint();
+ crashTime=Math.log(crashMult)/Math.log(1.12)*500;
 
- running = true;
- finished = false;
- current = 1;
- points = [{t:0,v:1}];
- startTime = performance.now();
+ running=true;
+ finished=false;
+ current=1;
+ points=[{t:0,v:1}];
+ startTime=performance.now();
 
- $("multiplier").style.color = "#55e6a5";
- $("multiplier").textContent = "1.00x";
- $("status").textContent =
-  "プレイ中  ベット 🪙" + bet.toLocaleString();
- $("subtitle").textContent =
+ $("multiplier").style.color="#55e6a5";
+ $("multiplier").textContent="1.00x";
+
+ $("status").textContent=
+  "プレイ中  ベット 🪙"+bet.toLocaleString();
+
+ $("subtitle").textContent=
   "倍率上昇中... CASH OUT で確定!";
 
  save();
@@ -678,187 +866,221 @@ function start() {
  animate();
 }
 
-function cashOut(m) {
- if (!running || cashed) return;
+function cashOut(value){
+ if(!running||cashed)return;
 
- m = Math.floor((m || current)*100)/100;
- cashed = m;
- payout = Math.floor(bet*m);
+ const multiplier=Math.floor((value||current)*100)/100;
+ const amount=Math.floor(bet*multiplier);
 
- data.coins += payout;
- data.total += payout;
+ if(
+  !Number.isSafeInteger(amount)||
+  !Number.isSafeInteger(data.coins+amount)||
+  !Number.isSafeInteger(data.total+amount)
+ ){
+  $("subtitle").textContent=
+   "コイン数が計算可能な上限を超えています";
+  return;
+ }
+
+ cashed=multiplier;
+ payout=amount;
+ data.coins+=payout;
+ data.total+=payout;
 
  addLog(
-  "キャッシュアウト | " + m.toFixed(2) + "x | +" +
-  payout.toLocaleString() + "コイン (利益 " +
-  (payout-bet >= 0 ? "+" : "") +
-  (payout-bet).toLocaleString() + ")"
+  "キャッシュアウト | "+
+  cashed.toFixed(2)+"x | +"+
+  payout.toLocaleString()+"コイン (利益 "+
+  (payout-bet>=0?"+":"")+
+  (payout-bet).toLocaleString()+")"
  );
 
- if (payout > bet) coinRain(payout-bet);
+ if(payout>bet)coinRain();
 
- $("multiplier").style.color = "#ffc94d";
- $("subtitle").textContent =
-  "✅ " + m.toFixed(2) + "x で +" +
-  payout.toLocaleString() + " COINS!  結末を見届けよう…";
+ $("multiplier").style.color="#ffc94d";
+
+ $("subtitle").textContent=
+  "✅ "+cashed.toFixed(2)+"x で +"+
+  payout.toLocaleString()+
+  " COINS! 結末を見届けよう…";
 
  save();
  setBtn();
 }
 
-function animate() {
- if (!running) return;
+function animate(){
+ if(!running)return;
 
- const elapsed = performance.now()-startTime;
- const crashed = elapsed >= crashTime;
+ const elapsed=performance.now()-startTime;
+ const crashed=elapsed>=crashTime;
 
- current = crashed
-  ? crashMult
-  : Math.min(crashMult,Math.pow(1.12,elapsed/500));
+ current=crashed
+  ?crashMult
+  :Math.min(crashMult,Math.pow(1.12,elapsed/500));
 
  points.push({
   t:Math.min(elapsed,crashTime),
   v:current
  });
 
- $("multiplier").textContent = current.toFixed(2)+"x";
+ $("multiplier").textContent=
+  current.toFixed(2)+"x";
 
- if (!crashed && !cashed && autoAt && current >= autoAt) {
+ if(
+  !crashed&&
+  !cashed&&
+  autoAt&&
+  current>=autoAt
+ ){
   cashOut(autoAt);
  }
 
- if (!cashed) setBtn();
+ if(!cashed)setBtn();
 
  draw();
 
- if (crashed) {
+ if(crashed){
   finish();
   return;
  }
 
- animation = requestAnimationFrame(animate);
+ animation=requestAnimationFrame(animate);
 }
 
-function finish() {
- if (finished) return;
+function finish(){
+ if(finished)return;
 
- finished = true;
- running = false;
+ finished=true;
+ running=false;
  cancelAnimationFrame(animation);
+ current=crashMult;
 
- current = crashMult;
+ $("multiplier").textContent=
+  crashMult.toFixed(2)+"x";
 
- $("multiplier").textContent = crashMult.toFixed(2)+"x";
- $("multiplier").style.color = "#ff647c";
- $("status").textContent =
-  "CRASH @ " + crashMult.toFixed(2) + "x";
+ $("multiplier").style.color="#ff647c";
 
- if (cashed) {
-  $("subtitle").textContent =
-   "✅ " + cashed.toFixed(2) + "x でキャッシュアウト 利益 " +
-   (payout-bet >= 0 ? "+" : "") +
-   (payout-bet).toLocaleString() + " COINS";
- } else {
-  $("subtitle").textContent =
-   "💥 クラッシュ... -" + bet.toLocaleString() + " COINS";
+ $("status").textContent=
+  "CRASH @ "+crashMult.toFixed(2)+"x";
+
+ if(cashed){
+  $("subtitle").textContent=
+   "✅ "+cashed.toFixed(2)+
+   "x でキャッシュアウト 利益 "+
+   (payout-bet>=0?"+":"")+
+   (payout-bet).toLocaleString()+" COINS";
+ }else{
+  $("subtitle").textContent=
+   "💥 クラッシュ... -"+
+   bet.toLocaleString()+" COINS";
 
   addLog(
-   "負け | " + crashMult.toFixed(2) + "x | -" +
-   bet.toLocaleString() + "コイン"
+   "負け | "+crashMult.toFixed(2)+
+   "x | -"+bet.toLocaleString()+"コイン"
   );
  }
 
- const H = getHist();
- H.unshift(crashMult);
- H.length = Math.min(H.length,30);
+ const history=getHist();
+ history.unshift(crashMult);
+ history.length=Math.min(history.length,30);
 
  draw();
- setBtn();
  save();
+ setBtn();
 }
 
-function reset() {
- if (running) return;
+function reset(){
+ if(running)return;
 
- current = 1;
- points = [];
- finished = false;
+ current=1;
+ points=[];
+ finished=false;
+ cashed=0;
 
- $("multiplier").textContent = "1.00x";
- $("multiplier").style.color = "#55e6a5";
- $("subtitle").textContent =
+ $("multiplier").textContent="1.00x";
+ $("multiplier").style.color="#55e6a5";
+
+ $("subtitle").textContent=
   "ベット額を決めて BET & START";
- $("status").textContent = "待機中";
+
+ $("status").textContent="待機中";
 
  setBtn();
  draw();
 }
 
-document.querySelectorAll(".chip").forEach(b => {
- b.onclick = () => {
-  if (running || accBusy) return;
+document.querySelectorAll(".chip").forEach(button=>{
+ button.onclick=()=>{
+  if(running||blocked())return;
 
-  let v = Math.floor(+$("bet").value) || 0;
-  const a = b.dataset.a;
+  let value=Math.floor(+$("bet").value)||0;
+  const action=button.dataset.a;
 
-  v = a === "half"
-   ? Math.floor(v/2)
-   : a === "x2"
-    ? v*2
-    : a === "max"
-     ? data.coins
-     : v + +a;
+  value=action==="half"
+   ?Math.floor(value/2)
+   :action==="x2"
+    ?value*2
+    :action==="max"
+     ?data.coins
+     :value+ +action;
 
-  $("bet").value = Math.max(
+  $("bet").value=Math.max(
    1,
-   Math.min(v,Math.max(1,data.coins))
+   Math.min(value,Math.max(1,data.coins))
   );
  };
 });
 
-$("refill").onclick = () => {
- if (running || accBusy || (data.refills || 0) >= 3) return;
+$("refill").onclick=()=>{
+ if(
+  running||
+  blocked()||
+  (data.refills||0)>=3
+ )return;
 
- data.refills = (data.refills || 0)+1;
- data.coins += 500;
+ data.refills=(data.refills||0)+1;
+ data.coins+=500;
 
  addLog(
-  "無料補充(" + data.refills + "/3回目) | +500コイン"
+  "無料補充("+data.refills+"/3回目) | +500コイン"
  );
 
  save();
 };
 
-$("start").addEventListener("click",() => {
- if (!running) start();
- else cashOut(current);
+$("start").addEventListener("click",()=>{
+ if(!running){
+  start();
+ }else{
+  cashOut(current);
+ }
 });
 
-$("reset").addEventListener("click",() => {
- if (!accBusy) reset();
+$("reset").addEventListener("click",()=>{
+ if(!accBusy)reset();
 });
 
-window.addEventListener("resize",() => {
+window.addEventListener("resize",()=>{
  resize();
  fxResize();
 });
 
-window.addEventListener("keydown",e => {
- if (
-  e.code === "Space" &&
-  $("page-pro").classList.contains("on") &&
-  document.activeElement.tagName !== "INPUT" &&
+window.addEventListener("keydown",event=>{
+ if(
+  event.code==="Space"&&
+  $("page-pro").classList.contains("on")&&
+  document.activeElement.tagName!=="INPUT"&&
   !$("start").disabled
- ) {
-  e.preventDefault();
+ ){
+  event.preventDefault();
   $("start").click();
  }
 });
 
-// ===== コード入力 =====
-const SALT = "nx-crash:";
+// ===== 受取コード =====
+const SALT="nx-crash:";
 
-const CODES = {
+const CODES={
  "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df":500,
  "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f":1000,
  "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced":300,
@@ -866,376 +1088,313 @@ const CODES = {
  "ac00bbc560da3b6ec80a706237ff7ac1f590e4ae89a9ae4cf573d03401f19dfe":100000000000
 };
 
-function sha256(ascii) {
- const rr = (v,a) => (v>>>a)|(v<<(32-a));
- const mp = Math.pow;
- const mw = mp(2,32);
+async function codeHash(text){
+ const bytes=await crypto.subtle.digest(
+  "SHA-256",
+  new TextEncoder().encode(text)
+ );
 
- let result = "";
- const words = [];
- const bitLen = ascii.length*8;
- let hash = [];
- let k = [];
- let pc = 0;
- let isC = {};
-
- for (let c=2; pc<64; c++) {
-  if (!isC[c]) {
-   for (let i=0; i<313; i+=c) isC[i]=c;
-
-   hash[pc]=(mp(c,.5)*mw)|0;
-   k[pc++]=(mp(c,1/3)*mw)|0;
-  }
- }
-
- ascii += "\x80";
-
- while (ascii.length%64-56) {
-  ascii += "\x00";
- }
-
- for (let i=0; i<ascii.length; i++) {
-  words[i>>2] |= ascii.charCodeAt(i)<<((3-i)%4)*8;
- }
-
- words[words.length]=(bitLen/mw)|0;
- words[words.length]=bitLen;
-
- for (let j=0; j<words.length;) {
-  const w=words.slice(j,j+=16);
-  const oldHash=hash;
-  hash=hash.slice(0,8);
-
-  for (let i=0; i<64; i++) {
-   const w15=w[i-15];
-   const w2=w[i-2];
-   const a=hash[0];
-   const e=hash[4];
-
-   const t1=hash[7]+
-    (rr(e,6)^rr(e,11)^rr(e,25))+
-    ((e&hash[5])^((~e)&hash[6]))+
-    k[i]+
-    (w[i]=(i<16)
-     ? w[i]
-     : (
-       w[i-16]+
-       (rr(w15,7)^rr(w15,18)^(w15>>>3))+
-       w[i-7]+
-       (rr(w2,17)^rr(w2,19)^(w2>>>10))
-      )|0);
-
-   const t2=
-    (rr(a,2)^rr(a,13)^rr(a,22))+
-    ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
-
-   hash=[(t1+t2)|0].concat(hash);
-   hash[4]=(hash[4]+t1)|0;
-  }
-
-  for (let i=0; i<8; i++) {
-   hash[i]=(hash[i]+oldHash[i])|0;
-  }
- }
-
- for (let i=0; i<8; i++) {
-  for (let j=3; j+1; j--) {
-   const b=(hash[i]>>(j*8))&255;
-   result += (b<16 ? "0" : "")+b.toString(16);
-  }
- }
-
- return result;
+ return Array.from(
+  new Uint8Array(bytes),
+  value=>value.toString(16).padStart(2,"0")
+ ).join("");
 }
 
-try {
+try{
  fetch("codes.json?"+Date.now())
-  .then(r => r.ok ? r.json() : {})
-  .then(j => Object.assign(CODES,j))
-  .catch(() => {});
-} catch (e) {}
+  .then(res=>res.ok?res.json():{})
+  .then(value=>{
+   if(
+    value&&
+    typeof value==="object"&&
+    !Array.isArray(value)
+   ){
+    for(const [key,amount] of Object.entries(value)){
+     if(
+      /^[a-f0-9]{64}$/.test(key)&&
+      Number.isSafeInteger(amount)&&
+      amount>=0
+     ){
+      CODES[key]=amount;
+     }
+    }
+   }
+  })
+  .catch(()=>{});
+}catch{}
 
-function usedList() {
- let u=[];
+let redeemBusy=false;
 
- try {
-  u=JSON.parse(
-   localStorage.getItem("crashUsed") || "[]"
-  );
- } catch (e) {}
+async function redeem(){
+ if(blocked()||redeemBusy)return;
 
- return Array.isArray(u) ? u : [];
-}
+ const accountId=nexusAccount?nexusAccount.id:"";
 
-function redeem() {
- if (accBusy) return;
-
- const c=$("code").value
+ const code=$("code").value
   .toUpperCase()
   .replace(/[^A-Z0-9]/g,"");
 
- const m=$("codemsg");
- const usedAll=usedList().concat(data.used || []);
+ const message=$("codemsg");
 
- if (!c) {
-  m.style.color="#9baac1";
-  m.textContent="コードを入力してください";
+ if(!code){
+  message.style.color="#9baac1";
+  message.textContent="コードを入力してください";
   return;
  }
 
- const h=sha256(SALT+c);
+ redeemBusy=true;
+ $("redeem").disabled=true;
 
- if (!(h in CODES)) {
-  m.style.color="#ff647c";
-  m.textContent="コードが違います";
-  return;
- }
+ try{
+  const hash=await codeHash(SALT+code);
 
- if (usedAll.includes(h)) {
-  m.style.color="#ff647c";
-  m.textContent="このコードはもう使っています";
-  return;
- }
+  if(
+   blocked()||
+   (nexusAccount?nexusAccount.id:"")!==accountId
+  ){
+   return;
+  }
 
- data.used=data.used || [];
- data.used.push(h);
+  if(!Object.prototype.hasOwnProperty.call(CODES,hash)){
+   throw new Error("コードが違います");
+  }
 
- try {
-  localStorage.setItem(
-   "crashUsed",
-   JSON.stringify(usedList().concat([h]))
+  if((data.used||[]).includes(hash)){
+   throw new Error("このコードはもう使っています");
+  }
+
+  if((data.used||[]).length>=200){
+   throw new Error(
+    "受取コードの保存件数の上限に達しています"
+   );
+  }
+
+  const amount=CODES[hash];
+
+  if(
+   !Number.isSafeInteger(amount)||
+   !Number.isSafeInteger(data.coins+amount)
+  ){
+   throw new Error("コイン数の上限を超えます");
+  }
+
+  data.used=data.used||[];
+  data.used.push(hash);
+  data.coins+=amount;
+
+  addLog(
+   "コード使用 | +"+
+   amount.toLocaleString()+"コイン"
   );
- } catch (e) {}
 
- data.coins+=CODES[h];
+  save();
 
- addLog(
-  "コード使用 | +" + CODES[h].toLocaleString() + "コイン"
- );
+  message.style.color="#55e6a5";
+  message.textContent=
+   "🎉 +"+amount.toLocaleString()+
+   " コインをゲットしました!";
 
- save();
-
- m.style.color="#55e6a5";
- m.textContent=
-  "🎉 +" + CODES[h].toLocaleString() +
-  " コインをゲットしました!";
-
- $("code").value="";
+  $("code").value="";
+ }catch(error){
+  message.style.color="#ff647c";
+  message.textContent=
+   error.message||"コードを確認できませんでした";
+ }finally{
+  redeemBusy=false;
+  $("redeem").disabled=blocked();
+ }
 }
 
 $("redeem").addEventListener("click",redeem);
 
-$("code").addEventListener("keydown",e => {
- if (e.key === "Enter") redeem();
+$("code").addEventListener("keydown",event=>{
+ if(event.key==="Enter")redeem();
 });
 
 // ===== コインの雨 =====
-const fx=$("fx");
-const fctx=fx.getContext("2d");
+function fxResize(){
+ const dpr=window.devicePixelRatio||1;
 
-let rain=[];
-let rainOn=false;
-let rl=0;
-let AC=null;
+ fx.width=innerWidth*dpr;
+ fx.height=innerHeight*dpr;
 
-function fxResize() {
- const d=window.devicePixelRatio || 1;
-
- fx.width=innerWidth*d;
- fx.height=innerHeight*d;
- fctx.setTransform(d,0,0,d,0,0);
+ fctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
-function initAC() {
- try {
-  AC=AC || new (
-   window.AudioContext || window.webkitAudioContext
+function initAC(){
+ try{
+  AC=AC||new(
+   window.AudioContext||window.webkitAudioContext
   )();
 
-  if (AC.resume) AC.resume();
- } catch (e) {}
+  if(AC.resume)AC.resume();
+ }catch{}
 }
 
-function coinSfx() {
- if (!AC) return;
+function coinSfx(){
+ if(!AC)return;
 
- try {
-  const t=AC.currentTime;
+ try{
+  const time=AC.currentTime;
 
-  for (let i=0; i<5; i++) {
-   const o=AC.createOscillator();
-   const gn=AC.createGain();
-   const s=t+i*.07;
+  for(let i=0;i<5;i++){
+   const oscillator=AC.createOscillator();
+   const gain=AC.createGain();
+   const start=time+i*.07;
 
-   o.type="triangle";
-   o.frequency.value=880*Math.pow(1.19,i);
+   oscillator.type="triangle";
+   oscillator.frequency.value=
+    880*Math.pow(1.19,i);
 
-   o.connect(gn);
-   gn.connect(AC.destination);
+   oscillator.connect(gain);
+   gain.connect(AC.destination);
 
-   gn.gain.setValueAtTime(.12,s);
-   gn.gain.exponentialRampToValueAtTime(.001,s+.2);
+   gain.gain.setValueAtTime(.12,start);
+   gain.gain.exponentialRampToValueAtTime(
+    .001,start+.2
+   );
 
-   o.start(s);
-   o.stop(s+.22);
+   oscillator.start(start);
+   oscillator.stop(start+.22);
   }
- } catch (e) {}
+ }catch{}
 }
 
-function coinRain(profit) {
- const W=innerWidth;
- const H=innerHeight;
- const n=20;
+function coinRain(){
+ for(let i=0;i<20;i++){
+  const left=i%2===0;
 
- for (let i=0; i<n; i++) {
-  const side=i%2;
-
-  const p={
+  rain.push({
    d:Math.random()*1.4,
    s:18+Math.random()*18,
    g:900,
-   vx:0,
-   vy:0,
-   x:0,
-   y:0,
+   x:left?-30:innerWidth+30,
+   y:Math.random()*innerHeight*.45,
+   vx:(left?1:-1)*(250+Math.random()*450),
+   vy:-250+Math.random()*200,
    r:Math.random()*6,
    vr:(Math.random()-.5)*8
-  };
-
-  if (side===0) {
-   p.x=-30;
-   p.y=Math.random()*H*.45;
-   p.vx=250+Math.random()*450;
-   p.vy=-250+Math.random()*200;
-  } else {
-   p.x=W+30;
-   p.y=Math.random()*H*.45;
-   p.vx=-(250+Math.random()*450);
-   p.vy=-250+Math.random()*200;
-  }
-
-  rain.push(p);
+  });
  }
 
  coinSfx();
 
- if (!rainOn) {
+ if(!rainOn){
   rainOn=true;
   rl=performance.now();
   requestAnimationFrame(rainLoop);
  }
 }
 
-function stepRain(dt) {
- for (let i=rain.length-1; i>=0; i--) {
-  const p=rain[i];
+function rainLoop(time){
+ const dt=Math.min(.05,(time-rl)/1000)*1.5;
+ rl=time;
 
-  if (p.d>0) {
-   p.d-=dt;
+ for(let i=rain.length-1;i>=0;i--){
+  const particle=rain[i];
+
+  if(particle.d>0){
+   particle.d-=dt;
    continue;
   }
 
-  p.vy+=p.g*dt;
-  p.x+=p.vx*dt;
-  p.y+=p.vy*dt;
-  p.r+=p.vr*dt;
+  particle.vy+=particle.g*dt;
+  particle.x+=particle.vx*dt;
+  particle.y+=particle.vy*dt;
+  particle.r+=particle.vr*dt;
 
-  if (
-   p.y>innerHeight+50 ||
-   p.x<-120 ||
-   p.x>innerWidth+120
-  ) {
+  if(
+   particle.y>innerHeight+50||
+   particle.x<-120||
+   particle.x>innerWidth+120
+  ){
    rain.splice(i,1);
   }
  }
-}
 
-function drawRain() {
  fctx.clearRect(0,0,innerWidth,innerHeight);
 
- for (const p of rain) {
-  if (p.d>0) continue;
+ for(const particle of rain){
+  if(particle.d>0)continue;
 
   fctx.save();
-  fctx.translate(p.x,p.y);
-  fctx.rotate(p.r);
-  fctx.font=p.s+"px sans-serif";
+  fctx.translate(particle.x,particle.y);
+  fctx.rotate(particle.r);
+  fctx.font=particle.s+"px sans-serif";
   fctx.textAlign="center";
   fctx.textBaseline="middle";
   fctx.fillText("🪙",0,0);
   fctx.restore();
  }
-}
 
-function rainLoop(t) {
- const dt=Math.min(.05,(t-rl)/1000)*1.5;
- rl=t;
-
- stepRain(dt);
- drawRain();
-
- if (rain.length) {
+ if(rain.length){
   requestAnimationFrame(rainLoop);
- } else {
+ }else{
   rainOn=false;
   fctx.clearRect(0,0,innerWidth,innerHeight);
  }
 }
 
-// ===== アカウント：Supabaseのnexus-authを使用 =====
-function switchData() {
- data=loadData();
- reset();
-
- applyTheme(
-  themes.some(t => t.id===data.selected)
-   ? data.selected
-   : "default"
- );
-}
-
-function renderAcct() {
- const a=nexusAccount;
+// ===== アカウント =====
+function renderAcct(){
+ const account=nexusAccount;
  const creating=accMode==="create";
 
- $("acctIn").style.display=a ? "block" : "none";
- $("acctOut").style.display=a ? "none" : "block";
- $("who").textContent=a ? a.display_name : "";
+ $("acctIn").style.display=
+  account?"block":"none";
 
- if (a) {
-  $("accShowName").textContent=a.display_name;
-  $("accShowId").textContent=a.username;
+ $("acctOut").style.display=
+  account?"none":"block";
+
+ $("who").textContent=
+  account?account.display_name:"";
+
+ if(account){
+  $("accShowName").textContent=
+   account.display_name;
+
+  $("accShowId").textContent=
+   account.username;
  }
 
- $("accNameRow").style.display=creating ? "flex" : "none";
+ $("accNameRow").style.display=
+  creating?"flex":"none";
+
  $("accSubmit").textContent=
-  creating ? "アカウント作成" : "ログイン";
+  creating?"アカウント作成":"ログイン";
+
  $("accToggle").textContent=
-  creating ? "ログインへ" : "新規作成へ";
+  creating?"ログインへ":"新規作成へ";
 
  $("accPw").autocomplete=
-  creating ? "new-password" : "current-password";
+  creating?"new-password":"current-password";
 
- $("accSubmit").disabled=accBusy;
- $("accToggle").disabled=accBusy;
- $("accLogout").disabled=accBusy;
- $("accId").disabled=accBusy;
- $("accPw").disabled=accBusy;
- $("accName").disabled=accBusy;
+ for(const id of [
+  "accSubmit",
+  "accToggle",
+  "accLogout",
+  "accId",
+  "accPw",
+  "accName"
+ ]){
+  $(id).disabled=accBusy;
+ }
 
  updateUI();
  setBtn();
 }
 
-function setAccountMessage(text,error=false) {
- $("accMsg").style.color=error ? "#ff647c" : "#9baac1";
+function setAccountMessage(text,error=false){
+ $("accMsg").style.color=
+  error?"#ff647c":"#9baac1";
+
  $("accMsg").textContent=text;
 }
 
-async function accSubmit() {
- if (accBusy) return;
+async function accSubmit(){
+ if(accBusy||redeemBusy)return;
 
- if (running) {
+ if(running){
   setAccountMessage(
    "プレイが終わってから操作してください",
    true
@@ -1243,12 +1402,15 @@ async function accSubmit() {
   return;
  }
 
- const username=$("accId").value.trim().toLowerCase();
+ const username=$("accId").value
+  .trim()
+  .toLowerCase();
+
  const password=$("accPw").value;
  const displayName=$("accName").value.trim();
  const creating=accMode==="create";
 
- if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+ if(!/^[a-z0-9_]{3,20}$/.test(username)){
   setAccountMessage(
    "IDは英数字と_で3〜20文字にしてください",
    true
@@ -1256,7 +1418,7 @@ async function accSubmit() {
   return;
  }
 
- if (password.length<8 || password.length>128) {
+ if(password.length<8||password.length>128){
   setAccountMessage(
    "パスワードは8〜128文字にしてください",
    true
@@ -1264,10 +1426,10 @@ async function accSubmit() {
   return;
  }
 
- if (
-  creating &&
-  (!displayName || displayName.length>12)
- ) {
+ if(
+  creating&&
+  (!displayName||displayName.length>12)
+ ){
   setAccountMessage(
    "表示名は1〜12文字にしてください",
    true
@@ -1277,171 +1439,209 @@ async function accSubmit() {
 
  accBusy=true;
  renderAcct();
- setAccountMessage("通信中です。そのままお待ちください…");
 
- try {
+ setAccountMessage(
+  "通信中です。そのままお待ちください…"
+ );
+
+ try{
   const result=await nexusRequest(
-   creating ? "signup" : "login",
+   creating?"signup":"login",
    {
     username,
     password,
-    ...(creating ? {display_name:displayName} : {})
+    ...(creating
+     ?{display_name:displayName}
+     :{})
    }
   );
 
-  if (!result.token || !result.account) {
-   throw new Error("ログイン結果を確認できませんでした");
+  if(
+   !result.token||
+   !result.account||
+   typeof result.updated_at!=="string"
+  ){
+   throw new Error(
+    "ログイン結果を確認できませんでした"
+   );
   }
 
-  nexusToken=result.token;
+  const serverData=normalizeData(result.game_data);
+
+  clearTimeout(saveTimer);
+  saveTimer=null;
+
   nexusAccount=result.account;
+  nexusToken=result.token;
+  cloudUpdatedAt=result.updated_at;
 
-  let localData=null;
+  localVersion=0;
+  savedVersion=0;
+  saveError="";
+  saveConflict=false;
 
-  try {
-   localData=JSON.parse(
-    localStorage.getItem(dataKey()) || "null"
-   );
-  } catch (e) {}
+  // サーバーのデータを読み込みます。
+  // 旧版のブラウザ内データは自動移行しません。
+  data=serverData;
 
-  data=localData || {
-   ...defaultData(),
-   ...(result.game_data || {})
-  };
-
+  writeLocalBackup();
   reset();
-
-  applyTheme(
-   themes.some(t => t.id===data.selected)
-    ? data.selected
-    : "default"
-  );
+  showTheme();
 
   $("accPw").value="";
   $("accName").value="";
+
   setAccountMessage("");
- } catch (e) {
+ }catch(error){
   setAccountMessage(
-   e instanceof Error
-    ? e.message
-    : "通信に失敗しました",
+   error instanceof Error
+    ?error.message
+    :"通信に失敗しました",
    true
   );
- } finally {
+ }finally{
   accBusy=false;
   renderAcct();
  }
 }
 
-async function accLogout() {
- if (accBusy) return;
+async function accLogout(){
+ if(accBusy||redeemBusy)return;
 
- if (running) {
-  alert("プレイが終わってからログアウトしてください");
+ if(running){
+  alert(
+   "プレイが終わってからログアウトしてください"
+  );
+  return;
+ }
+
+ if(saveError){
+  alert(
+   saveConflict
+    ?"保存が競合しています。再ログインするにはページを開き直してください。未保存の変更は自動統合されません。"
+    :"未保存の変更があります。先に「保存を再試行」を押してください。"
+  );
   return;
  }
 
  accBusy=true;
  renderAcct();
 
- try {
-  await nexusRequest("logout",{},nexusToken);
+ try{
+  await flushCloud();
+
+  await nexusRequest(
+   "logout",
+   {},
+   nexusToken
+  );
+
+  clearTimeout(saveTimer);
+  saveTimer=null;
 
   nexusToken="";
   nexusAccount=null;
-  accMode="login";
+  cloudUpdatedAt="";
 
-  switchData();
-  setAccountMessage("ログアウトしました");
- } catch (e) {
-  alert(
-   e instanceof Error
-    ? e.message
-    : "ログアウトに失敗しました"
+  localVersion=0;
+  savedVersion=0;
+  saveError="";
+  saveConflict=false;
+
+  accMode="login";
+  data=loadGuestData();
+
+  reset();
+  showTheme();
+
+  setAccountMessage(
+   "保存してログアウトしました"
   );
- } finally {
+ }catch(error){
+  alert(
+   error.message||
+   "ログアウトに失敗しました"
+  );
+ }finally{
   accBusy=false;
   renderAcct();
  }
 }
 
-$("accSubmit").addEventListener("click",accSubmit);
+$("accSubmit").addEventListener(
+ "click",
+ accSubmit
+);
 
-["accId","accPw","accName"].forEach(id => {
- $(id).addEventListener("keydown",e => {
-  if (e.key==="Enter") accSubmit();
+$("accLogout").addEventListener(
+ "click",
+ accLogout
+);
+
+["accId","accPw","accName"].forEach(id=>{
+ $(id).addEventListener("keydown",event=>{
+  if(event.key==="Enter")accSubmit();
  });
 });
 
-$("accToggle").addEventListener("click",() => {
- if (accBusy) return;
+$("accToggle").addEventListener("click",()=>{
+ if(accBusy)return;
 
- accMode=accMode==="create" ? "login" : "create";
+ accMode=accMode==="create"
+  ?"login"
+  :"create";
+
  setAccountMessage("");
  renderAcct();
 });
 
-$("accLogout").addEventListener("click",accLogout);
-
-// ===== 全体ランキング：サーバー接続は未実装 =====
-function renderRanking() {
- $("rankTime").textContent="";
- $("rankList").innerHTML="";
-
- const message=document.createElement("div");
- message.className="rank-empty";
- message.textContent=
-  "全体ランキングは準備中です。" +
-  "現在のコイン・履歴は、このブラウザ内だけに保存されます。";
-
- $("rankList").appendChild(message);
-}
-
 // ===== メニュー =====
-function showPage(id,title) {
- if (running) {
-  $("navmsg").textContent="プレイ中は移動できません";
+function showPage(id){
+ if(running){
+  $("navmsg").textContent=
+   "プレイ中は移動できません";
   return false;
  }
 
- if (accBusy) {
-  $("navmsg").textContent="アカウントの通信が終わるまでお待ちください";
+ if(accBusy){
+  $("navmsg").textContent=
+   "通信が終わるまでお待ちください";
   return false;
  }
 
  $("navmsg").textContent="";
 
- document.querySelectorAll(".page").forEach(p => {
-  p.classList.toggle("on",p.id==="page-"+id);
+ document.querySelectorAll(".page").forEach(page=>{
+  page.classList.toggle(
+   "on",
+   page.id==="page-"+id
+  );
  });
 
- if (title) $("soonTitle").textContent=title;
- if (id==="pro") resize();
- if (id==="ranking") renderRanking();
+ if(id==="pro")resize();
 
  return true;
 }
 
-function setNav(key) {
- document.querySelectorAll(".nav").forEach(b => {
-  b.classList.toggle("active",b.dataset.nav===key);
+function setNav(key){
+ document.querySelectorAll(".nav").forEach(button=>{
+  button.classList.toggle(
+   "active",
+   button.dataset.nav===key
+  );
  });
 }
 
-function closeSub() {
+function closeSub(){
  $("sub").classList.remove("open");
 }
 
-document.querySelectorAll(".nav").forEach(b => {
- b.onclick=() => {
-  const k=b.dataset.nav;
+document.querySelectorAll(".nav").forEach(button=>{
+ button.onclick=()=>{
+  const key=button.dataset.nav;
 
-  if (k==="crash") {
-   if (accBusy) {
-    $("navmsg").textContent=
-     "アカウントの通信が終わるまでお待ちください";
-    return;
-   }
+  if(key==="crash"){
+   if(accBusy)return;
 
    $("sub").classList.toggle("open");
    return;
@@ -1449,38 +1649,49 @@ document.querySelectorAll(".nav").forEach(b => {
 
   closeSub();
 
-  const ok=showPage(k);
-  if (ok) setNav(k);
+  if(showPage(key)){
+   setNav(key);
+  }
  };
 });
 
-document.querySelectorAll(".sub button").forEach(b => {
- b.onclick=() => {
-  const m=b.dataset.mode;
+document.querySelectorAll(".sub button").forEach(button=>{
+ button.onclick=()=>{
   closeSub();
 
-  const ok=showPage("pro");
-
-  if (ok) {
-   setMode(m);
+  if(showPage("pro")){
+   setMode(button.dataset.mode);
    setNav("crash");
   }
  };
 });
 
-document.addEventListener("click",e => {
- if (!e.target.closest(".navwrap")) closeSub();
+document.addEventListener("click",event=>{
+ if(!event.target.closest(".navwrap")){
+  closeSub();
+ }
+});
+
+// 未保存の変更やプレイ中の離脱に対して警告します。
+window.addEventListener("beforeunload",event=>{
+ if(
+  running||
+  dirty()||
+  savePromise||
+  accBusy
+ ){
+  event.preventDefault();
+  event.returnValue="";
+ }
 });
 
 // ===== 初期表示 =====
 fxResize();
 resize();
+showTheme();
 
-if (themes.some(t => t.id===data.selected)) {
- applyTheme(data.selected);
-} else {
- updateUI();
-}
+$("gameTitle").textContent=
+ "Crash ・ "+MODES[mode].name;
 
 renderAcct();
 setBtn();
