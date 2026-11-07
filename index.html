@@ -80,7 +80,6 @@ button:disabled{opacity:.4;cursor:not-allowed}
  .nav{width:auto;margin:0;padding:10px 12px;font-size:14px}
  .sub{left:0;top:calc(100% + 6px)}
  .navmsg{width:100%}
-
  .stats{grid-template-columns:1fr}
  .history{grid-template-columns:repeat(3,1fr)}
  .store{grid-template-columns:1fr}
@@ -95,7 +94,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
 <header>
  <div class="logo">CRASH</div>
- <div style="display:flex;align-items:center;gap:12px"><div class="status" id="who"></div><div class="balance">🪙 <span id="coins">1,000</span></div></div>
+ <div style="display:flex;align-items:center;gap:12px">
+  <div class="status" id="who"></div>
+  <div class="balance">🪙 <span id="coins">1,000</span></div>
+ </div>
 </header>
 
 <div class="app">
@@ -113,120 +115,212 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <button class="nav" data-nav="code">🎁 受取コード</button>
   <div class="navmsg" id="navmsg"></div>
  </nav>
+
  <main class="container">
-  <div class="page on" id="page-home"><div class="panel"><h2>ようこそ</h2><p class="note">左のメニューの「クラッシュ」から、遊ぶモードを選んでください。</p></div></div>
+  <div class="page on" id="page-home">
+   <div class="panel">
+    <h2>ようこそ</h2>
+    <p class="note">左のメニューの「クラッシュ」から、遊ぶモードを選んでください。</p>
+   </div>
+  </div>
+
   <div class="page" id="page-pro">
- <div class="panel">
-  <div class="top">
-   <h2 id="gameTitle">Crash</h2>
-   <div class="status" id="status">待機中</div>
-  </div>
-  <p class="note">ゲーム内コインだけで遊べます。現実のお金とは関係ありません。倍率が上がっている間に CASH OUT しよう!</p>
+   <div class="panel">
+    <div class="top">
+     <h2 id="gameTitle">Crash</h2>
+     <div class="status" id="status">待機中</div>
+    </div>
+    <p class="note">ゲーム内コインだけで遊べます。現実のお金とは関係ありません。倍率が上がっている間に CASH OUT しよう!</p>
 
-  <div class="game" id="game">
-   <canvas id="chart"></canvas>
-   <div class="multiplier" id="multiplier">1.00x</div>
-   <div class="subtitle" id="subtitle">ベット額を決めて BET & START</div>
-  </div>
+    <div class="game" id="game">
+     <canvas id="chart"></canvas>
+     <div class="multiplier" id="multiplier">1.00x</div>
+     <div class="subtitle" id="subtitle">ベット額を決めて BET & START</div>
+    </div>
 
-  <div class="bet">
-   <div class="betrow"><label>ベット額</label><input id="bet" type="number" min="1" step="1" value="100" inputmode="numeric"></div>
-   <div class="chips">
-    <button class="chip" data-a="10">+10</button>
-    <button class="chip" data-a="100">+100</button>
-    <button class="chip" data-a="1000">+1000</button>
-    <button class="chip" data-a="half">½</button>
-    <button class="chip" data-a="x2">×2</button>
-    <button class="chip" data-a="max">MAX</button>
+    <div class="bet">
+     <div class="betrow">
+      <label>ベット額</label>
+      <input id="bet" type="number" min="1" step="1" value="100" inputmode="numeric">
+     </div>
+     <div class="chips">
+      <button class="chip" data-a="10">+10</button>
+      <button class="chip" data-a="100">+100</button>
+      <button class="chip" data-a="1000">+1000</button>
+      <button class="chip" data-a="half">½</button>
+      <button class="chip" data-a="x2">×2</button>
+      <button class="chip" data-a="max">MAX</button>
+     </div>
+     <div class="betrow">
+      <label>自動キャッシュアウト</label>
+      <input id="auto" type="number" min="1.01" step="0.01" placeholder="なし (例 2.00)" inputmode="decimal">
+     </div>
+    </div>
+
+    <div class="controls">
+     <button class="start" id="start">BET & START</button>
+     <button class="reset" id="reset">RESET</button>
+    </div>
+    <button class="refill" id="refill">🆘 コインが少ないので 500 コイン補充</button>
    </div>
-   <div class="betrow"><label>自動キャッシュアウト</label><input id="auto" type="number" min="1.01" step="0.01" placeholder="なし (例 2.00)" inputmode="decimal"></div>
+
+   <div class="panel">
+    <h3>CRASH HISTORY</h3>
+    <div class="history" id="history">
+     <div class="history-item">---</div>
+    </div>
+   </div>
   </div>
 
-  <div class="controls">
-   <button class="start" id="start">BET & START</button>
-   <button class="reset" id="reset">RESET</button>
+  <div class="page" id="page-soon">
+   <div class="panel">
+    <h2 id="soonTitle"></h2>
+    <p class="note">準備中です。もう少しお待ちください。</p>
+   </div>
   </div>
-  <button class="refill" id="refill">🆘 コインが少ないので 500 コイン補充</button>
- </div>
 
- <div class="panel">
-  <h3>CRASH HISTORY</h3>
-  <div class="history" id="history">
-   <div class="history-item">---</div>
-  </div>
- </div>
-  </div>
-  <div class="page" id="page-soon"><div class="panel"><h2 id="soonTitle"></h2><p class="note">準備中です。もう少しお待ちください。</p></div></div>
   <div class="page" id="page-ranking">
- <div class="panel">
-  <h2>👑 長者番付</h2>
-  <p class="note">持っているコインが多い順です。1時間ごとに更新されます。(上位50人)</p>
-  <p class="note" id="rankTime"></p>
-  <div id="rankList" style="margin-top:16px"></div>
- </div>
-  </div>
-  <div class="page" id="page-user">
- <div class="panel" id="acctOut">
-  <h3>アカウント</h3>
-  <p class="note">この端末(ブラウザ)の中だけに保存されます。パスワードは強力な方式で暗号化して保存します。アカウントを作ると、いま持っているコインはそのまま引き継がれます。</p>
-  <div class="bet">
-   <div class="betrow"><label>ID</label><input id="accId" type="text" maxlength="20" autocomplete="username" autocapitalize="off" placeholder="英数字と_ 3〜20文字"></div>
-   <div class="betrow"><label>パスワード</label><input id="accPw" type="password" maxlength="64" autocomplete="new-password" placeholder="8文字以上"></div>
-   <div class="betrow" id="accNameRow"><label>ディスプレイネーム</label><input id="accName" type="text" maxlength="12" autocomplete="off" placeholder="1〜12文字"></div>
-  </div>
-  <div class="controls">
-   <button class="start" id="accSubmit">アカウント作成</button>
-   <button class="reset" id="accToggle">ログインへ</button>
-  </div>
-  <div class="codemsg" id="accMsg"></div>
- </div>
- <div class="panel" id="acctIn" style="display:none">
-  <h3>アカウント</h3>
-  <p style="font-size:20px;font-weight:bold" id="accShowName"></p>
-  <p class="note">ID: <span id="accShowId"></span></p>
-  <div class="controls"><button class="reset" id="accLogout">ログアウト</button></div>
- </div>
- <div class="panel">
-  <h3>MY STATUS</h3>
-  <div class="stats">
-   <div class="stat">
-    <small>所持コイン</small>
-    <strong class="green" id="coinStat">1,000</strong>
-   </div>
-   <div class="stat">
-    <small>累計獲得コイン</small>
-    <strong id="total">0</strong>
-   </div>
-   <div class="stat">
-    <small>プレイ回数</small>
-    <strong id="plays">0</strong>
+   <div class="panel">
+    <h2>👑 長者番付</h2>
+    <p class="note">全体ランキングは準備中です。</p>
+    <p class="note" id="rankTime"></p>
+    <div id="rankList" style="margin-top:16px"></div>
    </div>
   </div>
- </div>
 
- <div class="panel">
-  <h3>COIN LOG</h3>
-  <div class="log" id="log"></div>
- </div>
+  <div class="page" id="page-user">
+   <div class="panel" id="acctOut">
+    <h3>アカウント</h3>
+    <p class="note">
+     アカウントはサーバーで管理します。
+     旧ブラウザ内アカウントは引き継ぎません。
+     現在、コインや履歴の保存はこのブラウザ内だけです。
+     ページを再読み込みした場合は、もう一度ログインしてください。
+    </p>
+
+    <div class="bet">
+     <div class="betrow">
+      <label>ID</label>
+      <input id="accId" type="text" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="英数字と_ 3〜20文字">
+     </div>
+     <div class="betrow">
+      <label>パスワード</label>
+      <input id="accPw" type="password" maxlength="128" autocomplete="current-password" placeholder="8〜128文字">
+     </div>
+     <div class="betrow" id="accNameRow" style="display:none">
+      <label>ディスプレイネーム</label>
+      <input id="accName" type="text" maxlength="12" autocomplete="off" placeholder="1〜12文字">
+     </div>
+    </div>
+
+    <div class="controls">
+     <button class="start" id="accSubmit">ログイン</button>
+     <button class="reset" id="accToggle">新規作成へ</button>
+    </div>
+    <div class="codemsg" id="accMsg"></div>
+   </div>
+
+   <div class="panel" id="acctIn" style="display:none">
+    <h3>アカウント</h3>
+    <p style="font-size:20px;font-weight:bold" id="accShowName"></p>
+    <p class="note">ID: <span id="accShowId"></span></p>
+    <p class="note">コイン・履歴は、このブラウザ内に保存されています。別の端末とはまだ同期しません。</p>
+    <div class="controls">
+     <button class="reset" id="accLogout">ログアウト</button>
+    </div>
+   </div>
+
+   <div class="panel">
+    <h3>MY STATUS</h3>
+    <div class="stats">
+     <div class="stat">
+      <small>所持コイン</small>
+      <strong class="green" id="coinStat">1,000</strong>
+     </div>
+     <div class="stat">
+      <small>累計獲得コイン</small>
+      <strong id="total">0</strong>
+     </div>
+     <div class="stat">
+      <small>プレイ回数</small>
+      <strong id="plays">0</strong>
+     </div>
+    </div>
+   </div>
+
+   <div class="panel">
+    <h3>COIN LOG</h3>
+    <div class="log" id="log"></div>
+   </div>
   </div>
+
   <div class="page" id="page-code">
- <div class="panel">
-  <h3>CODE</h3>
-  <p style="color:#9baac1;font-size:13px">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
-  <div class="coderow">
-   <input id="code" type="text" placeholder="コードを入力" autocomplete="off" autocapitalize="characters" maxlength="20">
-   <button class="start" id="redeem" style="flex:0 0 auto">受け取る</button>
-  </div>
-  <div class="codemsg" id="codemsg"></div>
- </div>
+   <div class="panel">
+    <h3>CODE</h3>
+    <p style="color:#9baac1;font-size:13px">コードを入力するとコインがもらえます。(各コード1回だけ)</p>
+    <div class="coderow">
+     <input id="code" type="text" placeholder="コードを入力" autocomplete="off" autocapitalize="characters" maxlength="20">
+     <button class="start" id="redeem" style="flex:0 0 auto">受け取る</button>
+    </div>
+    <div class="codemsg" id="codemsg"></div>
+   </div>
   </div>
  </main>
 </div>
 
-<script>
-const $=id=>document.getElementById(id);
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-const themes=[
+<script>
+const $ = id => document.getElementById(id);
+
+// ===== Supabase 接続設定 =====
+const SUPABASE_URL = "https://gvxagesbmqkszjrvdtxi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0Tnq36DXrrS8dB-4dITTPw_hmug2OIN";
+
+// トークンは、このページを開いている間だけメモリに保持します。
+let nexusAccount = null;
+let nexusToken = "";
+let accMode = "login";
+let accBusy = false;
+
+// ===== サーバーのアカウント処理を呼び出す =====
+async function nexusRequest(action, values = {}, token = "") {
+ const headers = {
+  "Content-Type": "application/json",
+  "apikey": SUPABASE_PUBLISHABLE_KEY
+ };
+
+ if (token) {
+  headers["x-nexus-token"] = token;
+ }
+
+ const res = await fetch(
+  SUPABASE_URL + "/functions/v1/nexus-auth",
+  {
+   method: "POST",
+   headers,
+   body: JSON.stringify({ ...values, action })
+  }
+ );
+
+ let result;
+
+ try {
+  result = await res.json();
+ } catch {
+  throw new Error("サーバーからの応答を読み取れませんでした");
+ }
+
+ if (!res.ok) {
+  throw new Error(
+   result.error || "サーバーとの通信に失敗しました"
+  );
+ }
+
+ return result;
+}
+
+const themes = [
  {id:"default",name:"Original",price:0,bg:"#090d18",game:"#172c43"},
  {id:"purple",name:"Purple",price:300,bg:"#130c20",game:"#352052"},
  {id:"red",name:"Red",price:500,bg:"#200d16",game:"#54202c"},
@@ -235,653 +329,1160 @@ const themes=[
  {id:"green",name:"Emerald",price:1500,bg:"#081b16",game:"#164a39"}
 ];
 
-// コインなどのデータはアカウントごとに保存(ログインしていない時は「ゲスト」用)
-function dataKey(){const k=getSession();return k?"crashData:"+k:"crashDemoData"}
-function defaultData(){return {coins:1000,total:0,plays:0,owned:["default"],selected:"default",history:[],logs:[]}}
-function loadData(){let s=null;try{s=JSON.parse(localStorage.getItem(dataKey())||"null")}catch(e){}return s||defaultData()}
-let data=loadData();
+// ===== ブラウザ内のゲームデータ保存 =====
+function getSession() {
+ return nexusAccount ? "cloud:" + nexusAccount.id : "";
+}
 
-let mode="pro";
-let running=false,animation=null,startTime=0,crashTime=0,crashMult=1,current=1;
-let points=[],finished=false,bet=0,cashed=0,payout=0,autoAt=0;
+function dataKey() {
+ const k = getSession();
+ return k ? "crashData:" + k : "crashDemoData";
+}
 
-const canvas=$("chart");
-const ctx=canvas.getContext("2d");
+function defaultData() {
+ return {
+  coins:1000,
+  total:0,
+  plays:0,
+  owned:["default"],
+  selected:"default",
+  history:[],
+  logs:[]
+ };
+}
 
-function save(){
- try{localStorage.setItem(dataKey(),JSON.stringify(data))}catch(e){}
+function loadData() {
+ let saved = null;
+
+ try {
+  saved = JSON.parse(
+   localStorage.getItem(dataKey()) || "null"
+  );
+ } catch (e) {}
+
+ return saved || defaultData();
+}
+
+let data = loadData();
+
+let mode = "pro";
+let running = false;
+let animation = null;
+let startTime = 0;
+let crashTime = 0;
+let crashMult = 1;
+let current = 1;
+let points = [];
+let finished = false;
+let bet = 0;
+let cashed = 0;
+let payout = 0;
+let autoAt = 0;
+
+const canvas = $("chart");
+const ctx = canvas.getContext("2d");
+
+function save() {
+ try {
+  localStorage.setItem(dataKey(), JSON.stringify(data));
+ } catch (e) {}
+
  updateUI();
 }
 
-function updateUI(){
- $("coins").textContent=data.coins.toLocaleString();
- $("coinStat").textContent=data.coins.toLocaleString();
- $("total").textContent=data.total.toLocaleString();
- $("plays").textContent=data.plays;
+function updateUI() {
+ $("coins").textContent = data.coins.toLocaleString();
+ $("coinStat").textContent = data.coins.toLocaleString();
+ $("total").textContent = data.total.toLocaleString();
+ $("plays").textContent = data.plays;
 
- $("bet").disabled=running;
- $("auto").disabled=running;
- $("reset").disabled=running;
- document.querySelectorAll(".chip").forEach(b=>b.disabled=running);
- const left=Math.max(0,3-(data.refills||0));
- $("refill").style.display=(data.coins<10&&!running)?"block":"none";
- $("refill").disabled=left<=0;
- $("refill").textContent=left>0?"🆘 コインが少ないので 500 コイン補充(あと"+left+"回)":"補充は3回までです(使い切りました)";
+ $("bet").disabled = running || accBusy;
+ $("auto").disabled = running || accBusy;
+ $("reset").disabled = running || accBusy;
 
- $("history").innerHTML="";
- const H=getHist();
- if(!H.length){
-  $("history").innerHTML='<div class="history-item">---</div>';
- }else{
-  H.slice(0,12).forEach(v=>{
-   let el=document.createElement("div");
-   el.className="history-item "+(v>=2?"green":"");
-   el.textContent=v.toFixed(2)+"x";
+ document.querySelectorAll(".chip").forEach(b => {
+  b.disabled = running || accBusy;
+ });
+
+ $("redeem").disabled = accBusy;
+
+ const left = Math.max(0, 3 - (data.refills || 0));
+
+ $("refill").style.display =
+  data.coins < 10 && !running ? "block" : "none";
+
+ $("refill").disabled = left <= 0 || accBusy;
+
+ $("refill").textContent = left > 0
+  ? "🆘 コインが少ないので 500 コイン補充(あと" + left + "回)"
+  : "補充は3回までです(使い切りました)";
+
+ $("history").innerHTML = "";
+
+ const H = getHist();
+
+ if (!H.length) {
+  $("history").innerHTML =
+   '<div class="history-item">---</div>';
+ } else {
+  H.slice(0,12).forEach(v => {
+   const el = document.createElement("div");
+   el.className = "history-item " + (v >= 2 ? "green" : "");
+   el.textContent = v.toFixed(2) + "x";
    $("history").appendChild(el);
   });
  }
 
- $("log").innerHTML="";
- data.logs.slice(0,15).forEach(item=>{
-  let el=document.createElement("div");
-  el.textContent=item;
+ $("log").innerHTML = "";
+
+ data.logs.slice(0,15).forEach(item => {
+  const el = document.createElement("div");
+  el.textContent = item;
   $("log").appendChild(el);
  });
-
 }
 
-function addLog(message){
- data.logs.unshift(new Date().toLocaleString()+" | "+message);
- data.logs=data.logs.slice(0,30);
+function addLog(message) {
+ data.logs.unshift(
+  new Date().toLocaleString() + " | " + message
+ );
+ data.logs = data.logs.slice(0,30);
 }
 
-function applyTheme(id){
- let t=themes.find(x=>x.id===id);
- if(!t)return;
- document.body.style.background=t.bg;
- $("game").style.background=
-  "radial-gradient(ellipse at center,"+t.game+",#0b1220 85%)";
- data.selected=id;
+function applyTheme(id) {
+ const t = themes.find(x => x.id === id);
+ if (!t) return;
+
+ document.body.style.background = t.bg;
+ $("game").style.background =
+  "radial-gradient(ellipse at center," + t.game + ",#0b1220 85%)";
+
+ data.selected = id;
  save();
 }
 
-function resize(){
- const rect=canvas.getBoundingClientRect();
- const dpr=window.devicePixelRatio||1;
- canvas.width=rect.width*dpr;
- canvas.height=rect.height*dpr;
+function resize() {
+ const rect = canvas.getBoundingClientRect();
+ const dpr = window.devicePixelRatio || 1;
+
+ canvas.width = rect.width * dpr;
+ canvas.height = rect.height * dpr;
  ctx.setTransform(dpr,0,0,dpr,0,0);
  draw();
 }
 
-function draw(){
- const w=canvas.clientWidth;
- const h=canvas.clientHeight;
- ctx.clearRect(0,0,w,h);
+function draw() {
+ const w = canvas.clientWidth;
+ const h = canvas.clientHeight;
 
- ctx.strokeStyle="rgba(150,180,210,.09)";
- for(let i=1;i<6;i++){
-  let y=h-i*h/6;
+ ctx.clearRect(0,0,w,h);
+ ctx.strokeStyle = "rgba(150,180,210,.09)";
+
+ for (let i=1; i<6; i++) {
+  const y = h - i*h/6;
   ctx.beginPath();
   ctx.moveTo(0,y);
   ctx.lineTo(w,y);
   ctx.stroke();
  }
 
- if(points.length<2)return;
+ if (points.length < 2) return;
 
- const max=Math.max(3,current*1.2);
- const last=points[points.length-1];
- const tmax=Math.max(4000,last.t*1.15);
- const col=finished&&!cashed?"#ff647c":(cashed?"#ffc94d":"#55e6a5");
- const X=p=>(p.t/tmax)*w;
- const Y=p=>h-((p.v-1)/max)*h*.85;
+ const max = Math.max(3,current*1.2);
+ const last = points[points.length-1];
+ const tmax = Math.max(4000,last.t*1.15);
+
+ const col = finished && !cashed
+  ? "#ff647c"
+  : cashed
+   ? "#ffc94d"
+   : "#55e6a5";
+
+ const X = p => (p.t/tmax)*w;
+ const Y = p => h-((p.v-1)/max)*h*.85;
 
  ctx.beginPath();
- points.forEach((p,i)=>{
-  if(i===0)ctx.moveTo(X(p),Y(p));
+
+ points.forEach((p,i) => {
+  if (i===0) ctx.moveTo(X(p),Y(p));
   else ctx.lineTo(X(p),Y(p));
  });
 
- ctx.strokeStyle=col;
- ctx.lineWidth=4;
- ctx.lineJoin="round";
- ctx.shadowColor=col;
- ctx.shadowBlur=12;
+ ctx.strokeStyle = col;
+ ctx.lineWidth = 4;
+ ctx.lineJoin = "round";
+ ctx.shadowColor = col;
+ ctx.shadowBlur = 12;
  ctx.stroke();
- ctx.shadowBlur=0;
+ ctx.shadowBlur = 0;
 
  ctx.lineTo(X(last),h);
  ctx.lineTo(0,h);
  ctx.closePath();
 
- let gradient=ctx.createLinearGradient(0,0,0,h);
+ const gradient = ctx.createLinearGradient(0,0,0,h);
  gradient.addColorStop(0,col+"40");
  gradient.addColorStop(1,col+"00");
- ctx.fillStyle=gradient;
+
+ ctx.fillStyle = gradient;
  ctx.fill();
 }
 
 // ===== モード別のクラッシュ確率 =====
-// どのモードも同じコイン(data.coins)を使います。
-// p0=1.00x(即クラッシュ)の確率 / b=[確率,最小倍率,最大倍率] 各区間の中は 1/x 型(倍率が高いほど出にくい)
-const MAX_MULT=100; // 最大倍率(上げたい場合はここを変更)
-const MODES={
- beginner:{name:"初心者",tag:"甘デジ",p0:0.001,b:[
-  {p:0.650,a:1.01,b:2},{p:0.250,a:2,b:5},{p:0.070,a:5,b:10},{p:0.029,a:10,b:MAX_MULT}]},
- pro:{name:"プロ",tag:"",p0:0.001,b:[
-  {p:0.511,a:1.01,b:2},{p:0.296,a:2,b:5},{p:0.092,a:5,b:10},{p:0.100,a:10,b:MAX_MULT}]},
- hacker:{name:"ハッカー",tag:"ミドルタイプ",p0:0.005,b:[
-  {p:0.435,a:1.01,b:2},{p:0.300,a:2,b:5},{p:0.140,a:5,b:10},{p:0.120,a:10,b:MAX_MULT}]}
-};
-function crashPoint(){
- const M=MODES[mode];
- let r=Math.random();
- if(r<M.p0)return 1;
- r-=M.p0;
- for(const k of M.b){
-  if(r<k.p){
-   const u=r/k.p;
-   const x=1/(1/k.a-u*(1/k.a-1/k.b));
-   return Math.min(k.b-0.01,Math.max(k.a,Math.floor(x*100)/100));
-  }
-  r-=k.p;
+const MAX_MULT = 100;
+
+const MODES = {
+ beginner:{
+  name:"初心者",
+  tag:"甘デジ",
+  p0:0.001,
+  b:[
+   {p:0.650,a:1.01,b:2},
+   {p:0.250,a:2,b:5},
+   {p:0.070,a:5,b:10},
+   {p:0.029,a:10,b:MAX_MULT}
+  ]
+ },
+ pro:{
+  name:"プロ",
+  tag:"",
+  p0:0.001,
+  b:[
+   {p:0.511,a:1.01,b:2},
+   {p:0.296,a:2,b:5},
+   {p:0.092,a:5,b:10},
+   {p:0.100,a:10,b:MAX_MULT}
+  ]
+ },
+ hacker:{
+  name:"ハッカー",
+  tag:"ミドルタイプ",
+  p0:0.005,
+  b:[
+   {p:0.435,a:1.01,b:2},
+   {p:0.300,a:2,b:5},
+   {p:0.140,a:5,b:10},
+   {p:0.120,a:10,b:MAX_MULT}
+  ]
  }
+};
+
+function crashPoint() {
+ const M = MODES[mode];
+ let r = Math.random();
+
+ if (r < M.p0) return 1;
+ r -= M.p0;
+
+ for (const k of M.b) {
+  if (r < k.p) {
+   const u = r/k.p;
+   const x = 1/(1/k.a-u*(1/k.a-1/k.b));
+
+   return Math.min(
+    k.b-0.01,
+    Math.max(k.a,Math.floor(x*100)/100)
+   );
+  }
+
+  r -= k.p;
+ }
+
  return 2;
 }
-// 履歴はモードごとに分けて保存(プロは今までの data.history をそのまま使用)
-function getHist(){
- if(mode==="pro"){data.history=data.history||[];return data.history}
- data.hist=data.hist||{};
- return data.hist[mode]=data.hist[mode]||[];
+
+function getHist() {
+ if (mode === "pro") {
+  data.history = data.history || [];
+  return data.history;
+ }
+
+ data.hist = data.hist || {};
+ data.hist[mode] = data.hist[mode] || [];
+ return data.hist[mode];
 }
-function setMode(m){
- if(running||!MODES[m])return;
- mode=m;
- const M=MODES[m];
- $("gameTitle").textContent="Crash ・ "+M.name;
+
+function setMode(m) {
+ if (running || accBusy || !MODES[m]) return;
+
+ mode = m;
+ $("gameTitle").textContent = "Crash ・ " + MODES[m].name;
+
  reset();
  updateUI();
 }
 
-function setBtn(){
- const b=$("start");
- if(!running){
-  b.textContent="BET & START";b.className="start";b.disabled=false;
- }else if(!cashed){
-  b.textContent="CASH OUT  🪙"+Math.floor(bet*current).toLocaleString();
-  b.className="start cash";b.disabled=false;
- }else{
-  b.textContent="✅ キャッシュアウト済み";b.className="start";b.disabled=true;
+function setBtn() {
+ const b = $("start");
+
+ if (!running) {
+  b.textContent = "BET & START";
+  b.className = "start";
+  b.disabled = accBusy;
+ } else if (!cashed) {
+  b.textContent =
+   "CASH OUT  🪙" + Math.floor(bet*current).toLocaleString();
+  b.className = "start cash";
+  b.disabled = false;
+ } else {
+  b.textContent = "✅ キャッシュアウト済み";
+  b.className = "start";
+  b.disabled = true;
  }
 }
 
-function start(){
- if(running)return;
+function start() {
+ if (running || accBusy) return;
 
  initAC();
- bet=Math.floor(+$("bet").value);
- if(!(bet>=1)){$("subtitle").textContent="ベット額を入力してください";return}
- if(bet>data.coins){$("subtitle").textContent="コインが足りません";return}
- autoAt=+$("auto").value;
- if(!(autoAt>=1.01))autoAt=0;
+ bet = Math.floor(+$("bet").value);
 
- data.coins-=bet;
+ if (!(bet >= 1)) {
+  $("subtitle").textContent = "ベット額を入力してください";
+  return;
+ }
+
+ if (bet > data.coins) {
+  $("subtitle").textContent = "コインが足りません";
+  return;
+ }
+
+ autoAt = +$("auto").value;
+ if (!(autoAt >= 1.01)) autoAt = 0;
+
+ data.coins -= bet;
  data.plays++;
- cashed=0;payout=0;
- addLog("ベット | -"+bet.toLocaleString()+"コイン");
+ cashed = 0;
+ payout = 0;
 
- crashMult=crashPoint();
- crashTime=Math.log(crashMult)/Math.log(1.12)*500;
+ addLog("ベット | -" + bet.toLocaleString() + "コイン");
 
- running=true;
- finished=false;
- current=1;
- points=[{t:0,v:1}];
- startTime=performance.now();
+ crashMult = crashPoint();
+ crashTime = Math.log(crashMult)/Math.log(1.12)*500;
 
- $("multiplier").style.color="#55e6a5";
- $("multiplier").textContent="1.00x";
- $("status").textContent="プレイ中  ベット 🪙"+bet.toLocaleString();
- $("subtitle").textContent="倍率上昇中... CASH OUT で確定!";
+ running = true;
+ finished = false;
+ current = 1;
+ points = [{t:0,v:1}];
+ startTime = performance.now();
+
+ $("multiplier").style.color = "#55e6a5";
+ $("multiplier").textContent = "1.00x";
+ $("status").textContent =
+  "プレイ中  ベット 🪙" + bet.toLocaleString();
+ $("subtitle").textContent =
+  "倍率上昇中... CASH OUT で確定!";
+
  save();
  setBtn();
  animate();
 }
 
-function cashOut(m){
- if(!running||cashed)return;
- m=Math.floor((m||current)*100)/100;
- cashed=m;
- payout=Math.floor(bet*m);
- data.coins+=payout;
- data.total+=payout;
- addLog("キャッシュアウト | "+m.toFixed(2)+"x | +"+payout.toLocaleString()+"コイン (利益 "+(payout-bet>=0?"+":"")+(payout-bet).toLocaleString()+")");
- if(payout>bet)coinRain(payout-bet);
- $("multiplier").style.color="#ffc94d";
- $("subtitle").textContent="✅ "+m.toFixed(2)+"x で +"+payout.toLocaleString()+" COINS!  結末を見届けよう…";
+function cashOut(m) {
+ if (!running || cashed) return;
+
+ m = Math.floor((m || current)*100)/100;
+ cashed = m;
+ payout = Math.floor(bet*m);
+
+ data.coins += payout;
+ data.total += payout;
+
+ addLog(
+  "キャッシュアウト | " + m.toFixed(2) + "x | +" +
+  payout.toLocaleString() + "コイン (利益 " +
+  (payout-bet >= 0 ? "+" : "") +
+  (payout-bet).toLocaleString() + ")"
+ );
+
+ if (payout > bet) coinRain(payout-bet);
+
+ $("multiplier").style.color = "#ffc94d";
+ $("subtitle").textContent =
+  "✅ " + m.toFixed(2) + "x で +" +
+  payout.toLocaleString() + " COINS!  結末を見届けよう…";
+
  save();
  setBtn();
 }
 
-function animate(){
- if(!running)return;
+function animate() {
+ if (!running) return;
 
- const elapsed=performance.now()-startTime;
- const crashed=elapsed>=crashTime;
+ const elapsed = performance.now()-startTime;
+ const crashed = elapsed >= crashTime;
 
- current=crashed?crashMult:Math.min(crashMult,Math.pow(1.12,elapsed/500));
- points.push({t:Math.min(elapsed,crashTime),v:current});
- $("multiplier").textContent=current.toFixed(2)+"x";
+ current = crashed
+  ? crashMult
+  : Math.min(crashMult,Math.pow(1.12,elapsed/500));
 
- if(!crashed&&!cashed&&autoAt&&current>=autoAt)cashOut(autoAt);
- if(!cashed)setBtn();
+ points.push({
+  t:Math.min(elapsed,crashTime),
+  v:current
+ });
+
+ $("multiplier").textContent = current.toFixed(2)+"x";
+
+ if (!crashed && !cashed && autoAt && current >= autoAt) {
+  cashOut(autoAt);
+ }
+
+ if (!cashed) setBtn();
 
  draw();
 
- if(crashed){
+ if (crashed) {
   finish();
   return;
  }
 
- animation=requestAnimationFrame(animate);
+ animation = requestAnimationFrame(animate);
 }
 
-function finish(){
- if(finished)return;
- finished=true;
- running=false;
+function finish() {
+ if (finished) return;
+
+ finished = true;
+ running = false;
  cancelAnimationFrame(animation);
 
- current=crashMult;
- $("multiplier").textContent=crashMult.toFixed(2)+"x";
- $("multiplier").style.color="#ff647c";
- $("status").textContent="CRASH @ "+crashMult.toFixed(2)+"x";
+ current = crashMult;
 
- if(cashed){
-  $("subtitle").textContent="✅ "+cashed.toFixed(2)+"x でキャッシュアウト 利益 "+(payout-bet>=0?"+":"")+(payout-bet).toLocaleString()+" COINS";
- }else{
-  $("subtitle").textContent="💥 クラッシュ... -"+bet.toLocaleString()+" COINS";
-  addLog("負け | "+crashMult.toFixed(2)+"x | -"+bet.toLocaleString()+"コイン");
+ $("multiplier").textContent = crashMult.toFixed(2)+"x";
+ $("multiplier").style.color = "#ff647c";
+ $("status").textContent =
+  "CRASH @ " + crashMult.toFixed(2) + "x";
+
+ if (cashed) {
+  $("subtitle").textContent =
+   "✅ " + cashed.toFixed(2) + "x でキャッシュアウト 利益 " +
+   (payout-bet >= 0 ? "+" : "") +
+   (payout-bet).toLocaleString() + " COINS";
+ } else {
+  $("subtitle").textContent =
+   "💥 クラッシュ... -" + bet.toLocaleString() + " COINS";
+
+  addLog(
+   "負け | " + crashMult.toFixed(2) + "x | -" +
+   bet.toLocaleString() + "コイン"
+  );
  }
 
- const H=getHist();
+ const H = getHist();
  H.unshift(crashMult);
- H.length=Math.min(H.length,30);
+ H.length = Math.min(H.length,30);
 
  draw();
  setBtn();
  save();
 }
 
-function reset(){
- if(running)return;
- current=1;
- points=[];
- finished=false;
+function reset() {
+ if (running) return;
 
- $("multiplier").textContent="1.00x";
- $("multiplier").style.color="#55e6a5";
- $("subtitle").textContent="ベット額を決めて BET & START";
- $("status").textContent="待機中";
+ current = 1;
+ points = [];
+ finished = false;
+
+ $("multiplier").textContent = "1.00x";
+ $("multiplier").style.color = "#55e6a5";
+ $("subtitle").textContent =
+  "ベット額を決めて BET & START";
+ $("status").textContent = "待機中";
+
  setBtn();
  draw();
 }
 
-document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
- let v=Math.floor(+$("bet").value)||0;
- const a=b.dataset.a;
- v=a=="half"?Math.floor(v/2):a=="x2"?v*2:a=="max"?data.coins:v+ +a;
- $("bet").value=Math.max(1,Math.min(v,Math.max(1,data.coins)));
+document.querySelectorAll(".chip").forEach(b => {
+ b.onclick = () => {
+  if (running || accBusy) return;
+
+  let v = Math.floor(+$("bet").value) || 0;
+  const a = b.dataset.a;
+
+  v = a === "half"
+   ? Math.floor(v/2)
+   : a === "x2"
+    ? v*2
+    : a === "max"
+     ? data.coins
+     : v + +a;
+
+  $("bet").value = Math.max(
+   1,
+   Math.min(v,Math.max(1,data.coins))
+  );
+ };
 });
 
-$("refill").onclick=()=>{
- if((data.refills||0)>=3)return;
- data.refills=(data.refills||0)+1;
- data.coins+=500;
- addLog("無料補充("+data.refills+"/3回目) | +500コイン");
+$("refill").onclick = () => {
+ if (running || accBusy || (data.refills || 0) >= 3) return;
+
+ data.refills = (data.refills || 0)+1;
+ data.coins += 500;
+
+ addLog(
+  "無料補充(" + data.refills + "/3回目) | +500コイン"
+ );
+
  save();
 };
 
-$("start").addEventListener("click",()=>{
- if(!running)start();
+$("start").addEventListener("click",() => {
+ if (!running) start();
  else cashOut(current);
 });
-$("reset").addEventListener("click",reset);
-window.addEventListener("resize",()=>{resize();fxResize()});
-window.addEventListener("keydown",e=>{
- if(e.code==="Space"&&$("page-pro").classList.contains("on")&&document.activeElement.tagName!=="INPUT"&&!$("start").disabled){
+
+$("reset").addEventListener("click",() => {
+ if (!accBusy) reset();
+});
+
+window.addEventListener("resize",() => {
+ resize();
+ fxResize();
+});
+
+window.addEventListener("keydown",e => {
+ if (
+  e.code === "Space" &&
+  $("page-pro").classList.contains("on") &&
+  document.activeElement.tagName !== "INPUT" &&
+  !$("start").disabled
+ ) {
   e.preventDefault();
   $("start").click();
  }
 });
 
 // ===== コード入力 =====
-// コードそのものはここに書かず、暗号化した値(SHA-256)だけを置いています。
-// ソースを見ても元のコードはわかりません。 {暗号化した値:もらえるコイン数}
-// コードを増やすときは codegen.html で作って、codes.json に入れます。
-const SALT="nx-crash:";
-const CODES={
- "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df": 500,
- "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f": 1000,
- "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced": 300,
- "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6": 100000,
- "ac00bbc560da3b6ec80a706237ff7ac1f590e4ae89a9ae4cf573d03401f19dfe": 100000000000
+const SALT = "nx-crash:";
+
+const CODES = {
+ "d9afac92e6cebba72cb175e62b6e6314c02416fd3374cddff71a31e11e16b1df":500,
+ "f4b57402cd95dbf8443c55b8c2b235ae538fe3608e76b53cc7f6ef6cc3739d7f":1000,
+ "9c0af711a6f042433c914f54aceca1edc36fa64e3d8649bdf2a00f8f5f456ced":300,
+ "272d2c70816bea789c9639503116e836bb0d4535324ff618b861fd5a6dd810a6":100000,
+ "ac00bbc560da3b6ec80a706237ff7ac1f590e4ae89a9ae4cf573d03401f19dfe":100000000000
 };
-function sha256(ascii){
- const rr=(v,a)=>(v>>>a)|(v<<(32-a));
- const mp=Math.pow,mw=mp(2,32);
- let result="";
- const words=[],bitLen=ascii.length*8;
- let hash=[],k=[],pc=0,isC={};
- for(let c=2;pc<64;c++){if(!isC[c]){for(let i=0;i<313;i+=c)isC[i]=c;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0}}
- ascii+="\x80";
- while(ascii.length%64-56)ascii+="\x00";
- for(let i=0;i<ascii.length;i++)words[i>>2]|=ascii.charCodeAt(i)<<((3-i)%4)*8;
- words[words.length]=((bitLen/mw)|0);
+
+function sha256(ascii) {
+ const rr = (v,a) => (v>>>a)|(v<<(32-a));
+ const mp = Math.pow;
+ const mw = mp(2,32);
+
+ let result = "";
+ const words = [];
+ const bitLen = ascii.length*8;
+ let hash = [];
+ let k = [];
+ let pc = 0;
+ let isC = {};
+
+ for (let c=2; pc<64; c++) {
+  if (!isC[c]) {
+   for (let i=0; i<313; i+=c) isC[i]=c;
+
+   hash[pc]=(mp(c,.5)*mw)|0;
+   k[pc++]=(mp(c,1/3)*mw)|0;
+  }
+ }
+
+ ascii += "\x80";
+
+ while (ascii.length%64-56) {
+  ascii += "\x00";
+ }
+
+ for (let i=0; i<ascii.length; i++) {
+  words[i>>2] |= ascii.charCodeAt(i)<<((3-i)%4)*8;
+ }
+
+ words[words.length]=(bitLen/mw)|0;
  words[words.length]=bitLen;
- for(let j=0;j<words.length;){
-  const w=words.slice(j,j+=16),oldHash=hash;
+
+ for (let j=0; j<words.length;) {
+  const w=words.slice(j,j+=16);
+  const oldHash=hash;
   hash=hash.slice(0,8);
-  for(let i=0;i<64;i++){
-   const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
-   const t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10))|0));
-   const t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+
+  for (let i=0; i<64; i++) {
+   const w15=w[i-15];
+   const w2=w[i-2];
+   const a=hash[0];
+   const e=hash[4];
+
+   const t1=hash[7]+
+    (rr(e,6)^rr(e,11)^rr(e,25))+
+    ((e&hash[5])^((~e)&hash[6]))+
+    k[i]+
+    (w[i]=(i<16)
+     ? w[i]
+     : (
+       w[i-16]+
+       (rr(w15,7)^rr(w15,18)^(w15>>>3))+
+       w[i-7]+
+       (rr(w2,17)^rr(w2,19)^(w2>>>10))
+      )|0);
+
+   const t2=
+    (rr(a,2)^rr(a,13)^rr(a,22))+
+    ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+
    hash=[(t1+t2)|0].concat(hash);
    hash[4]=(hash[4]+t1)|0;
   }
-  for(let i=0;i<8;i++)hash[i]=(hash[i]+oldHash[i])|0;
+
+  for (let i=0; i<8; i++) {
+   hash[i]=(hash[i]+oldHash[i])|0;
+  }
  }
- for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;result+=((b<16)?0:"")+b.toString(16)}
+
+ for (let i=0; i<8; i++) {
+  for (let j=3; j+1; j--) {
+   const b=(hash[i]>>(j*8))&255;
+   result += (b<16 ? "0" : "")+b.toString(16);
+  }
+ }
+
  return result;
 }
-// 同じフォルダの codes.json があれば、そのコードも使えるようにする(後から増やす用)
-try{fetch("codes.json?"+Date.now()).then(r=>r.ok?r.json():{}).then(j=>Object.assign(CODES,j)).catch(()=>{})}catch(e){}
-function usedList(){let u=[];try{u=JSON.parse(localStorage.getItem("crashUsed")||"[]")}catch(e){}return Array.isArray(u)?u:[]}
-function redeem(){
- const c=$("code").value.toUpperCase().replace(/[^A-Z0-9]/g,""),m=$("codemsg");
- const usedAll=usedList().concat(data.used||[]);
- if(!c){m.style.color="#9baac1";m.textContent="コードを入力してください";return}
+
+try {
+ fetch("codes.json?"+Date.now())
+  .then(r => r.ok ? r.json() : {})
+  .then(j => Object.assign(CODES,j))
+  .catch(() => {});
+} catch (e) {}
+
+function usedList() {
+ let u=[];
+
+ try {
+  u=JSON.parse(
+   localStorage.getItem("crashUsed") || "[]"
+  );
+ } catch (e) {}
+
+ return Array.isArray(u) ? u : [];
+}
+
+function redeem() {
+ if (accBusy) return;
+
+ const c=$("code").value
+  .toUpperCase()
+  .replace(/[^A-Z0-9]/g,"");
+
+ const m=$("codemsg");
+ const usedAll=usedList().concat(data.used || []);
+
+ if (!c) {
+  m.style.color="#9baac1";
+  m.textContent="コードを入力してください";
+  return;
+ }
+
  const h=sha256(SALT+c);
- if(!(h in CODES)){m.style.color="#ff647c";m.textContent="コードが違います";return}
- if(usedAll.includes(h)){m.style.color="#ff647c";m.textContent="このコードはもう使っています";return}
- data.used=data.used||[];data.used.push(h);
- try{localStorage.setItem("crashUsed",JSON.stringify(usedList().concat([h])))}catch(e){}
+
+ if (!(h in CODES)) {
+  m.style.color="#ff647c";
+  m.textContent="コードが違います";
+  return;
+ }
+
+ if (usedAll.includes(h)) {
+  m.style.color="#ff647c";
+  m.textContent="このコードはもう使っています";
+  return;
+ }
+
+ data.used=data.used || [];
+ data.used.push(h);
+
+ try {
+  localStorage.setItem(
+   "crashUsed",
+   JSON.stringify(usedList().concat([h]))
+  );
+ } catch (e) {}
+
  data.coins+=CODES[h];
- addLog("コード使用 | +"+CODES[h].toLocaleString()+"コイン");
+
+ addLog(
+  "コード使用 | +" + CODES[h].toLocaleString() + "コイン"
+ );
+
  save();
+
  m.style.color="#55e6a5";
- m.textContent="🎉 +"+CODES[h].toLocaleString()+" コインをゲットしました!";
+ m.textContent=
+  "🎉 +" + CODES[h].toLocaleString() +
+  " コインをゲットしました!";
+
  $("code").value="";
 }
-$("redeem").addEventListener("click",redeem);
-$("code").addEventListener("keydown",e=>{if(e.key==="Enter")redeem()});
 
-// ===== コインの雨(左・右から) =====
-const fx=$("fx"),fctx=fx.getContext("2d");
-let rain=[],rainOn=false,rl=0,AC=null;
-function fxResize(){
- const d=window.devicePixelRatio||1;
- fx.width=innerWidth*d;fx.height=innerHeight*d;
+$("redeem").addEventListener("click",redeem);
+
+$("code").addEventListener("keydown",e => {
+ if (e.key === "Enter") redeem();
+});
+
+// ===== コインの雨 =====
+const fx=$("fx");
+const fctx=fx.getContext("2d");
+
+let rain=[];
+let rainOn=false;
+let rl=0;
+let AC=null;
+
+function fxResize() {
+ const d=window.devicePixelRatio || 1;
+
+ fx.width=innerWidth*d;
+ fx.height=innerHeight*d;
  fctx.setTransform(d,0,0,d,0,0);
 }
-function initAC(){
- try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.resume)AC.resume()}catch(e){}
+
+function initAC() {
+ try {
+  AC=AC || new (
+   window.AudioContext || window.webkitAudioContext
+  )();
+
+  if (AC.resume) AC.resume();
+ } catch (e) {}
 }
-function coinSfx(){
- if(!AC)return;
- try{
+
+function coinSfx() {
+ if (!AC) return;
+
+ try {
   const t=AC.currentTime;
-  for(let i=0;i<5;i++){
-   const o=AC.createOscillator(),gn=AC.createGain(),s=t+i*.07;
-   o.type="triangle";o.frequency.value=880*Math.pow(1.19,i);
-   o.connect(gn);gn.connect(AC.destination);
+
+  for (let i=0; i<5; i++) {
+   const o=AC.createOscillator();
+   const gn=AC.createGain();
+   const s=t+i*.07;
+
+   o.type="triangle";
+   o.frequency.value=880*Math.pow(1.19,i);
+
+   o.connect(gn);
+   gn.connect(AC.destination);
+
    gn.gain.setValueAtTime(.12,s);
    gn.gain.exponentialRampToValueAtTime(.001,s+.2);
-   o.start(s);o.stop(s+.22);
+
+   o.start(s);
+   o.stop(s+.22);
   }
- }catch(e){}
+ } catch (e) {}
 }
-function coinRain(profit){
- const W=innerWidth,H=innerHeight,n=20; // 降るコインは合計20枚(左10・右10)
- for(let i=0;i<n;i++){
+
+function coinRain(profit) {
+ const W=innerWidth;
+ const H=innerHeight;
+ const n=20;
+
+ for (let i=0; i<n; i++) {
   const side=i%2;
-  const p={d:Math.random()*1.4,s:18+Math.random()*18,g:700,vx:0,vy:0,x:0,y:0,r:Math.random()*6,vr:(Math.random()-.5)*8};
-  if(side===0){p.x=-30;p.y=Math.random()*H*.45;p.vx=250+Math.random()*450;p.vy=-250+Math.random()*200;p.g=900}
-  else{p.x=W+30;p.y=Math.random()*H*.45;p.vx=-(250+Math.random()*450);p.vy=-250+Math.random()*200;p.g=900}
+
+  const p={
+   d:Math.random()*1.4,
+   s:18+Math.random()*18,
+   g:900,
+   vx:0,
+   vy:0,
+   x:0,
+   y:0,
+   r:Math.random()*6,
+   vr:(Math.random()-.5)*8
+  };
+
+  if (side===0) {
+   p.x=-30;
+   p.y=Math.random()*H*.45;
+   p.vx=250+Math.random()*450;
+   p.vy=-250+Math.random()*200;
+  } else {
+   p.x=W+30;
+   p.y=Math.random()*H*.45;
+   p.vx=-(250+Math.random()*450);
+   p.vy=-250+Math.random()*200;
+  }
+
   rain.push(p);
  }
+
  coinSfx();
- if(!rainOn){rainOn=true;rl=performance.now();requestAnimationFrame(rainLoop)}
-}
-function stepRain(dt){
- for(let i=rain.length-1;i>=0;i--){
-  const p=rain[i];
-  if(p.d>0){p.d-=dt;continue}
-  p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;
-  if(p.y>innerHeight+50||p.x<-120||p.x>innerWidth+120)rain.splice(i,1);
+
+ if (!rainOn) {
+  rainOn=true;
+  rl=performance.now();
+  requestAnimationFrame(rainLoop);
  }
 }
-function drawRain(){
+
+function stepRain(dt) {
+ for (let i=rain.length-1; i>=0; i--) {
+  const p=rain[i];
+
+  if (p.d>0) {
+   p.d-=dt;
+   continue;
+  }
+
+  p.vy+=p.g*dt;
+  p.x+=p.vx*dt;
+  p.y+=p.vy*dt;
+  p.r+=p.vr*dt;
+
+  if (
+   p.y>innerHeight+50 ||
+   p.x<-120 ||
+   p.x>innerWidth+120
+  ) {
+   rain.splice(i,1);
+  }
+ }
+}
+
+function drawRain() {
  fctx.clearRect(0,0,innerWidth,innerHeight);
- for(const p of rain){
-  if(p.d>0)continue;
+
+ for (const p of rain) {
+  if (p.d>0) continue;
+
   fctx.save();
-  fctx.translate(p.x,p.y);fctx.rotate(p.r);
-  fctx.font=p.s+"px sans-serif";fctx.textAlign="center";fctx.textBaseline="middle";
+  fctx.translate(p.x,p.y);
+  fctx.rotate(p.r);
+  fctx.font=p.s+"px sans-serif";
+  fctx.textAlign="center";
+  fctx.textBaseline="middle";
   fctx.fillText("🪙",0,0);
   fctx.restore();
  }
 }
-// 描画は端末のリフレッシュレートいっぱいで更新(速さは経過時間で計算するのでfpsが違っても同じ)
-function rainLoop(t){
- const dt=Math.min(.05,(t-rl)/1000)*1.5;rl=t;
+
+function rainLoop(t) {
+ const dt=Math.min(.05,(t-rl)/1000)*1.5;
+ rl=t;
+
  stepRain(dt);
  drawRain();
- if(rain.length)requestAnimationFrame(rainLoop);
- else{rainOn=false;fctx.clearRect(0,0,innerWidth,innerHeight)}
+
+ if (rain.length) {
+  requestAnimationFrame(rainLoop);
+ } else {
+  rainOn=false;
+  fctx.clearRect(0,0,innerWidth,innerHeight);
+ }
 }
 
-// ===== アカウント =====
-// この端末のlocalStorageにだけ保存。パスワードは平文で保存せず、ランダムなソルト付きSHA-256(1000回)にしています。
-let accMode="create";
-const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
-function getAccts(){try{return JSON.parse(localStorage.getItem("crashAccounts")||"{}")||{}}catch(e){return {}}}
-function putAccts(a){try{localStorage.setItem("crashAccounts",JSON.stringify(a));return true}catch(e){return false}}
-function getSession(){try{return sessionStorage.getItem("crashSession")||""}catch(e){return ""}}
-function setSession(k){try{if(k)sessionStorage.setItem("crashSession",k);else sessionStorage.removeItem("crashSession")}catch(e){}}
-// 以前の版で残っている「ずっとログイン」の記録は消す
-try{localStorage.removeItem("crashSession")}catch(e){}
-function randSalt(){
- const a=new Uint8Array(16);
- try{crypto.getRandomValues(a)}catch(e){for(let i=0;i<16;i++)a[i]=Math.floor(Math.random()*256)}
- return Array.from(a,x=>("0"+x.toString(16)).slice(-2)).join("");
+// ===== アカウント：Supabaseのnexus-authを使用 =====
+function switchData() {
+ data=loadData();
+ reset();
+
+ applyTheme(
+  themes.some(t => t.id===data.selected)
+   ? data.selected
+   : "default"
+ );
 }
-function pwHash(salt,pw){
- const bytes=String.fromCharCode(...new TextEncoder().encode(pw));
- let h=sha256("nx-acct:"+salt+":"+bytes);
- for(let i=0;i<1000;i++)h=sha256(h+salt);
- return h;
+
+function renderAcct() {
+ const a=nexusAccount;
+ const creating=accMode==="create";
+
+ $("acctIn").style.display=a ? "block" : "none";
+ $("acctOut").style.display=a ? "none" : "block";
+ $("who").textContent=a ? a.display_name : "";
+
+ if (a) {
+  $("accShowName").textContent=a.display_name;
+  $("accShowId").textContent=a.username;
+ }
+
+ $("accNameRow").style.display=creating ? "flex" : "none";
+ $("accSubmit").textContent=
+  creating ? "アカウント作成" : "ログイン";
+ $("accToggle").textContent=
+  creating ? "ログインへ" : "新規作成へ";
+
+ $("accPw").autocomplete=
+  creating ? "new-password" : "current-password";
+
+ $("accSubmit").disabled=accBusy;
+ $("accToggle").disabled=accBusy;
+ $("accLogout").disabled=accBusy;
+ $("accId").disabled=accBusy;
+ $("accPw").disabled=accBusy;
+ $("accName").disabled=accBusy;
+
+ updateUI();
+ setBtn();
 }
-// --- 安全対策 ---
-// ・パスワードは PBKDF2-SHA256(210,000回)で保存(古いアカウントはログイン時に自動で切り替え)
-// ・ログインに5回失敗すると一定時間ロック(失敗が続くほど長くなる)
-// ・ログイン状態はタブを閉じると消える
-const SUBTLE_OK=!!(window.crypto&&crypto.subtle&&window.isSecureContext);
-const RESERVED=["__proto__","constructor","prototype","tostring","valueof","hasownproperty"];
-const WEAK=["password","12345678","123456789","1234567890","qwertyui","qwerty123","password1","abcd1234","11111111","00000000","iloveyou","letmein1"];
-const MAX_FAIL=5;
-async function pwHashV2(salt,pw){
- const enc=new TextEncoder();
- const k=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveBits"]);
- const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:enc.encode("nx-acct2:"+salt),iterations:210000},k,256);
- return Array.from(new Uint8Array(bits),x=>("0"+x.toString(16)).slice(-2)).join("");
+
+function setAccountMessage(text,error=false) {
+ $("accMsg").style.color=error ? "#ff647c" : "#9baac1";
+ $("accMsg").textContent=text;
 }
-function eq(a,b){
- a=String(a);b=String(b);
- let d=a.length^b.length;
- for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);
- return d===0;
-}
-function getFails(){try{const f=JSON.parse(localStorage.getItem("crashFails")||"{}");return f&&typeof f==="object"?f:{}}catch(e){return {}}}
-function putFails(f){try{if(Object.keys(f).length>200)f={};localStorage.setItem("crashFails",JSON.stringify(f))}catch(e){}}
-function switchData(){
- data=loadData();reset();
- applyTheme(themes.some(t=>t.id===data.selected)?data.selected:"default");
-}
-function renderAcct(){
- const all=getAccts(),k=getSession(),a=hasOwn(all,k)?all[k]:null,c=accMode==="create";
- $("acctIn").style.display=a?"block":"none";
- $("acctOut").style.display=a?"none":"block";
- $("who").textContent=a?a.name:"";
- if(a){$("accShowName").textContent=a.name;$("accShowId").textContent=a.id}
- $("accNameRow").style.display=c?"flex":"none";
- $("accSubmit").textContent=c?"アカウント作成":"ログイン";
- $("accToggle").textContent=c?"ログインへ":"新規作成へ";
- $("accPw").autocomplete=c?"new-password":"current-password";
-}
-let accBusy=false;
-async function accSubmit(){
- if(accBusy)return;
- const m=$("accMsg"),bad=t=>{m.style.color="#ff647c";m.textContent=t};
- const id=$("accId").value.trim(),pw=$("accPw").value,key=id.toLowerCase();
- if(!/^[A-Za-z0-9_]{3,20}$/.test(id))return bad("IDは英数字と_で3〜20文字にしてください");
- if(RESERVED.includes(key))return bad("このIDは使えません");
- accBusy=true;$("accSubmit").disabled=true;
- try{
-  if(accMode==="create"){
-   const name=$("accName").value.trim();
-   if(pw.length<8)return bad("パスワードは8文字以上にしてください");
-   if(pw.toLowerCase()===key||WEAK.includes(pw.toLowerCase())||/^(.)\1+$/.test(pw))return bad("推測されやすいパスワードです。別のものにしてください");
-   if(!name||name.length>12)return bad("ディスプレイネームは1〜12文字にしてください");
-   if(hasOwn(getAccts(),key))return bad("このIDはもう使われています");
-   m.style.color="#9baac1";m.textContent="処理中...";
-   const salt=randSalt(),v=SUBTLE_OK?2:1;
-   const hash=v===2?await pwHashV2(salt,pw):pwHash(salt,pw);
-   const all=getAccts();
-   if(hasOwn(all,key))return bad("このIDはもう使われています");
-   all[key]={id:id,name:name,salt:salt,hash:hash,v:v,created:Date.now()};
-   if(!putAccts(all))return bad("保存できませんでした");
-   // いままで(ゲストで)持っていたコイン・履歴などをそのまま新しいアカウントに引き継ぐ
-   const carry=getSession()?defaultData():data;
-   setSession(key);data=carry;
-   try{localStorage.setItem("crashDemoData",JSON.stringify(defaultData()))}catch(e){}
-   addLog("アカウント作成 | "+name);
-   save();
-  }else{
-   const fails=getFails(),f=hasOwn(fails,key)?fails[key]:{n:0,lvl:0,until:0};
-   if(f.until>Date.now())return bad("ログインに何度も失敗したため、あと"+Math.ceil((f.until-Date.now())/60000)+"分ほど待ってからやり直してください");
-   m.style.color="#9baac1";m.textContent="処理中...";
-   const all=getAccts(),a=hasOwn(all,key)?all[key]:null;
-   const useV2=a?a.v===2:SUBTLE_OK;
-   if(useV2&&!SUBTLE_OK)return bad("この環境ではログインできません(https か、手元のファイルとして開いてください)");
-   const salt=a?a.salt:"0000000000000000";
-   const h=useV2?await pwHashV2(salt,pw):pwHash(salt,pw);
-   if(!a||!eq(h,a.hash)){
-    f.n=(f.n||0)+1;
-    if(f.n>=MAX_FAIL){f.lvl=(f.lvl||0)+1;f.n=0;f.until=Date.now()+Math.min(60,5*Math.pow(2,f.lvl-1))*60000}
-    fails[key]=f;putFails(fails);
-    return bad(f.until>Date.now()?"ログインに何度も失敗したため、しばらくロックしました":"IDかパスワードが違います");
+
+async function accSubmit() {
+ if (accBusy) return;
+
+ if (running) {
+  setAccountMessage(
+   "プレイが終わってから操作してください",
+   true
+  );
+  return;
+ }
+
+ const username=$("accId").value.trim().toLowerCase();
+ const password=$("accPw").value;
+ const displayName=$("accName").value.trim();
+ const creating=accMode==="create";
+
+ if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+  setAccountMessage(
+   "IDは英数字と_で3〜20文字にしてください",
+   true
+  );
+  return;
+ }
+
+ if (password.length<8 || password.length>128) {
+  setAccountMessage(
+   "パスワードは8〜128文字にしてください",
+   true
+  );
+  return;
+ }
+
+ if (
+  creating &&
+  (!displayName || displayName.length>12)
+ ) {
+  setAccountMessage(
+   "表示名は1〜12文字にしてください",
+   true
+  );
+  return;
+ }
+
+ accBusy=true;
+ renderAcct();
+ setAccountMessage("通信中です。そのままお待ちください…");
+
+ try {
+  const result=await nexusRequest(
+   creating ? "signup" : "login",
+   {
+    username,
+    password,
+    ...(creating ? {display_name:displayName} : {})
    }
-   delete fails[key];putFails(fails);
-   if(a.v!==2&&SUBTLE_OK){ // 古い保存方式のアカウントを強い方式に切り替え
-    const s2=randSalt(),h2=await pwHashV2(s2,pw),all2=getAccts();
-    if(hasOwn(all2,key)){all2[key].salt=s2;all2[key].hash=h2;all2[key].v=2;putAccts(all2)}
-   }
+  );
+
+  if (!result.token || !result.account) {
+   throw new Error("ログイン結果を確認できませんでした");
   }
-  setSession(key);switchData();
-  $("accPw").value="";$("accName").value="";m.textContent="";
-  renderAcct();
- }catch(e){
-  bad("エラーが起きました。もう一度試してください");
- }finally{
-  accBusy=false;$("accSubmit").disabled=false;
- }
-}
-$("accSubmit").addEventListener("click",accSubmit);
-["accId","accPw","accName"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter")accSubmit()}));
-$("accToggle").addEventListener("click",()=>{accMode=accMode==="create"?"login":"create";$("accMsg").textContent="";renderAcct()});
-$("accLogout").addEventListener("click",()=>{setSession("");accMode="login";switchData();renderAcct()});
-renderAcct();
 
-// ===== 長者番付(1時間ごとに更新) =====
-const RK_KEY="crashRanking",HOUR=3600000;
-function rankBuild(){
- const all=getAccts(),list=[];
- for(const k in all){
-  if(!hasOwn(all,k))continue;
-  let d=null;
-  try{d=JSON.parse(localStorage.getItem("crashData:"+k)||"null")}catch(e){}
-  list.push({k:k,name:all[k].name,coins:d&&typeof d.coins==="number"?d.coins:1000});
+  nexusToken=result.token;
+  nexusAccount=result.account;
+
+  let localData=null;
+
+  try {
+   localData=JSON.parse(
+    localStorage.getItem(dataKey()) || "null"
+   );
+  } catch (e) {}
+
+  data=localData || {
+   ...defaultData(),
+   ...(result.game_data || {})
+  };
+
+  reset();
+
+  applyTheme(
+   themes.some(t => t.id===data.selected)
+    ? data.selected
+    : "default"
+  );
+
+  $("accPw").value="";
+  $("accName").value="";
+  setAccountMessage("");
+ } catch (e) {
+  setAccountMessage(
+   e instanceof Error
+    ? e.message
+    : "通信に失敗しました",
+   true
+  );
+ } finally {
+  accBusy=false;
+  renderAcct();
  }
- list.sort((a,b)=>b.coins-a.coins);
- return list.slice(0,50);
 }
-function rankTick(){
- const slot=Math.floor(Date.now()/HOUR);
- let r=null;
- try{r=JSON.parse(localStorage.getItem(RK_KEY)||"null")}catch(e){}
- if(!r||r.slot!==slot||!Array.isArray(r.list)){
-  r={slot:slot,list:rankBuild()};
-  try{localStorage.setItem(RK_KEY,JSON.stringify(r))}catch(e){}
+
+async function accLogout() {
+ if (accBusy) return;
+
+ if (running) {
+  alert("プレイが終わってからログアウトしてください");
+  return;
  }
- return r;
+
+ accBusy=true;
+ renderAcct();
+
+ try {
+  await nexusRequest("logout",{},nexusToken);
+
+  nexusToken="";
+  nexusAccount=null;
+  accMode="login";
+
+  switchData();
+  setAccountMessage("ログアウトしました");
+ } catch (e) {
+  alert(
+   e instanceof Error
+    ? e.message
+    : "ログアウトに失敗しました"
+  );
+ } finally {
+  accBusy=false;
+  renderAcct();
+ }
 }
-function renderRanking(){
- const r=rankTick(),me=getSession(),box=$("rankList");
- const hm=ms=>new Date(ms).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
- $("rankTime").textContent="最終更新 "+hm(r.slot*HOUR)+" / 次の更新 "+hm((r.slot+1)*HOUR);
- box.innerHTML="";
- if(!r.list.length){
-  const e=document.createElement("div");e.className="rank-empty";
-  e.textContent="まだ誰も載っていません。「ユーザー」でアカウントを作ると、次の更新から載ります。";
-  box.appendChild(e);return;
- }
- r.list.forEach((x,i)=>{
-  const row=document.createElement("div");row.className="rank-row"+(x.k===me?" me":"");
-  const no=document.createElement("span");no.className="rk-no";no.textContent=["🥇","🥈","🥉"][i]||(i+1)+"位";
-  const nm=document.createElement("span");nm.className="rk-name";nm.textContent=x.name;
-  const cn=document.createElement("span");cn.className="rk-coins";cn.textContent="🪙 "+x.coins.toLocaleString();
-  row.append(no,nm,cn);box.appendChild(row);
+
+$("accSubmit").addEventListener("click",accSubmit);
+
+["accId","accPw","accName"].forEach(id => {
+ $(id).addEventListener("keydown",e => {
+  if (e.key==="Enter") accSubmit();
  });
+});
+
+$("accToggle").addEventListener("click",() => {
+ if (accBusy) return;
+
+ accMode=accMode==="create" ? "login" : "create";
+ setAccountMessage("");
+ renderAcct();
+});
+
+$("accLogout").addEventListener("click",accLogout);
+
+// ===== 全体ランキング：サーバー接続は未実装 =====
+function renderRanking() {
+ $("rankTime").textContent="";
+ $("rankList").innerHTML="";
+
+ const message=document.createElement("div");
+ message.className="rank-empty";
+ message.textContent=
+  "全体ランキングは準備中です。" +
+  "現在のコイン・履歴は、このブラウザ内だけに保存されます。";
+
+ $("rankList").appendChild(message);
 }
-rankTick();
-setInterval(()=>{if($("page-ranking").classList.contains("on"))renderRanking();else rankTick()},30000);
 
 // ===== メニュー =====
-function showPage(id,title){
- if(running){$("navmsg").textContent="プレイ中は移動できません";return false}
+function showPage(id,title) {
+ if (running) {
+  $("navmsg").textContent="プレイ中は移動できません";
+  return false;
+ }
+
+ if (accBusy) {
+  $("navmsg").textContent="アカウントの通信が終わるまでお待ちください";
+  return false;
+ }
+
  $("navmsg").textContent="";
- document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id==="page-"+id));
- if(title)$("soonTitle").textContent=title;
- if(id==="pro")resize();
- if(id==="ranking")renderRanking();
+
+ document.querySelectorAll(".page").forEach(p => {
+  p.classList.toggle("on",p.id==="page-"+id);
+ });
+
+ if (title) $("soonTitle").textContent=title;
+ if (id==="pro") resize();
+ if (id==="ranking") renderRanking();
+
  return true;
 }
-function setNav(key){document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.nav===key))}
-function closeSub(){$("sub").classList.remove("open")}
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
- const k=b.dataset.nav;
- if(k==="crash"){$("sub").classList.toggle("open");return}
- closeSub();
- const ok=showPage(k);
- if(ok)setNav(k);
-});
-document.querySelectorAll(".sub button").forEach(b=>b.onclick=()=>{
- const m=b.dataset.mode;
- closeSub();
- const ok=showPage("pro");
- if(ok){setMode(m);setNav("crash")}
-});
-document.addEventListener("click",e=>{if(!e.target.closest(".navwrap"))closeSub()});
 
+function setNav(key) {
+ document.querySelectorAll(".nav").forEach(b => {
+  b.classList.toggle("active",b.dataset.nav===key);
+ });
+}
+
+function closeSub() {
+ $("sub").classList.remove("open");
+}
+
+document.querySelectorAll(".nav").forEach(b => {
+ b.onclick=() => {
+  const k=b.dataset.nav;
+
+  if (k==="crash") {
+   if (accBusy) {
+    $("navmsg").textContent=
+     "アカウントの通信が終わるまでお待ちください";
+    return;
+   }
+
+   $("sub").classList.toggle("open");
+   return;
+  }
+
+  closeSub();
+
+  const ok=showPage(k);
+  if (ok) setNav(k);
+ };
+});
+
+document.querySelectorAll(".sub button").forEach(b => {
+ b.onclick=() => {
+  const m=b.dataset.mode;
+  closeSub();
+
+  const ok=showPage("pro");
+
+  if (ok) {
+   setMode(m);
+   setNav("crash");
+  }
+ };
+});
+
+document.addEventListener("click",e => {
+ if (!e.target.closest(".navwrap")) closeSub();
+});
+
+// ===== 初期表示 =====
 fxResize();
 resize();
-if(themes.some(t=>t.id===data.selected)){
+
+if (themes.some(t => t.id===data.selected)) {
  applyTheme(data.selected);
-}else{
+} else {
  updateUI();
 }
+
+renderAcct();
 setBtn();
 </script>
 </body>
