@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRASH ギフトコード管理</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#090d18;
+ color:#eef4ff;
+ font-family:Arial,sans-serif;
+}
+header{
+ padding:20px;
+ background:#111827;
+ border-bottom:1px solid #293449;
+}
+header h1{
+ margin:0;
+ color:#55e6a5;
+ font-size:22px;
+}
+main{
+ max-width:1100px;
+ margin:24px auto;
+ padding:0 16px;
+}
+.panel{
+ background:#111a2b;
+ border:1px solid #29364d;
+ border-radius:12px;
+ padding:22px;
+ margin-bottom:18px;
+}
+h2{margin:0 0 18px;font-size:20px}
+label{
+ display:block;
+ margin-bottom:7px;
+ color:#b6c4d8;
+ font-size:14px;
+}
+input{
+ width:100%;
+ padding:12px;
+ background:#202d42;
+ border:1px solid #33445f;
+ border-radius:8px;
+ color:white;
+ font-size:16px;
+}
+input:disabled{opacity:.55}
+button{
+ border:0;
+ border-radius:8px;
+ padding:12px 18px;
+ background:#42d99b;
+ color:#071b13;
+ font-size:14px;
+ font-weight:bold;
+ cursor:pointer;
+}
+button:disabled{
+ opacity:.45;
+ cursor:not-allowed;
+}
+.secondary{background:#26354b;color:white}
+.danger{background:#ff647c;color:#23080e}
+.row{
+ display:flex;
+ gap:10px;
+ align-items:center;
+ flex-wrap:wrap;
+}
+.grid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:18px;
+}
+.field{margin-bottom:18px}
+.note{
+ color:#9baac1;
+ font-size:13px;
+ line-height:1.8;
+ margin:7px 0;
+}
+.message{
+ white-space:pre-wrap;
+ line-height:1.7;
+ margin:14px 0 0;
+ font-size:14px;
+}
+.table-wrap{overflow:auto}
+table{
+ width:100%;
+ border-collapse:collapse;
+ min-width:850px;
+}
+th,td{
+ padding:12px 10px;
+ text-align:left;
+ border-bottom:1px solid #29364d;
+ font-size:13px;
+ vertical-align:top;
+}
+th{color:#9baac1}
+code{color:#55e6a5;word-break:break-all}
+.good{color:#55e6a5}
+.bad{color:#ff8799}
+.warn{color:#ffcf78}
+.hidden{display:none!important}
+.result{
+ padding:16px;
+ background:#202d42;
+ border-radius:8px;
+ margin-top:16px;
+}
+.result code{
+ display:block;
+ font-size:23px;
+ margin:8px 0;
+}
+#topMessage{margin-bottom:18px}
+@media(max-width:650px){
+ .grid{grid-template-columns:1fr}
+ .panel{padding:17px}
+}
+</style>
+</head>
+<body>
+
+<header>
+ <h1>CRASH ギフトコード管理</h1>
+</header>
+
+<main>
+ <div id="topMessage" class="message"></div>
+
+ <section class="panel" id="loginPanel">
+  <h2>管理者ログイン</h2>
+  <p class="note">
+   管理者に設定されたCRASHアカウントでログインしてください。
+  </p>
+
+  <form id="loginForm">
+   <div class="field">
+    <label for="username">ID</label>
+    <input
+     id="username"
+     autocomplete="username"
+     autocapitalize="off"
+     spellcheck="false"
+     maxlength="20"
+     required
+    >
+   </div>
+
+   <div class="field">
+    <label for="password">パスワード</label>
+    <input
+     id="password"
+     type="password"
+     autocomplete="current-password"
+     minlength="8"
+     maxlength="128"
+     required
+    >
+   </div>
+
+   <button type="submit">ログイン</button>
+  </form>
+
+  <div id="loginMessage" class="message"></div>
+ </section>
+
+ <div id="adminArea" class="hidden">
+  <section class="panel">
+   <div class="row">
+    <strong id="adminName"></strong>
+    <button
+     type="button"
+     class="secondary"
+     id="reloadButton"
+    >一覧を更新</button>
+    <button
+     type="button"
+     class="secondary"
+     id="logoutButton"
+    >管理画面からログアウト</button>
+   </div>
+
+   <p class="note" id="sessionInfo"></p>
+   <p class="note">
+    管理画面はゲームとは別のセッションを使います。
+    同じブラウザでは最終アクセスから14日間ログインを保持します。
+   </p>
+  </section>
+
+  <section class="panel">
+   <h2>コードを作成</h2>
+
+   <form id="createForm">
+    <div class="grid">
+     <div class="field">
+      <label for="giftCode">コード</label>
+      <input
+       id="giftCode"
+       maxlength="32"
+       autocomplete="off"
+       autocapitalize="characters"
+       spellcheck="false"
+       placeholder="空欄ならランダム生成"
+      >
+      <p class="note">
+       英数字4〜32文字。小文字は大文字に変換します。
+      </p>
+     </div>
+
+     <div class="field">
+      <label for="amount">配布コイン数</label>
+      <input
+       id="amount"
+       type="number"
+       min="1"
+       max="9007199254740991"
+       step="1"
+       value="1000"
+       required
+      >
+     </div>
+
+     <div class="field">
+      <label for="expiresAt">有効期限</label>
+      <input id="expiresAt" type="datetime-local">
+      <p class="note">
+       空欄なら無期限。入力日時はこの端末のタイムゾーンで扱います。
+      </p>
+     </div>
+
+     <div class="field">
+      <label for="maxUses">利用人数の上限</label>
+      <input
+       id="maxUses"
+       type="number"
+       min="1"
+       max="2147483647"
+       step="1"
+       placeholder="空欄なら上限なし"
+      >
+      <p class="note">
+       同じアカウントは、同じコードを1回だけ受け取れます。
+      </p>
+     </div>
+    </div>
+
+    <button type="submit">作成内容を確認</button>
+   </form>
+
+   <div id="createMessage" class="message"></div>
+   <div id="createdResult" class="result hidden"></div>
+  </section>
+
+  <section class="panel">
+   <h2>登録済みコード</h2>
+   <p class="note">
+    新しい順に最大100件を表示します。
+    停止しても、すでに配布したコインは回収しません。
+   </p>
+   <div id="listMessage" class="message"></div>
+
+   <div class="table-wrap">
+    <table>
+     <thead>
+      <tr>
+       <th>コード</th>
+       <th>コイン数</th>
+       <th>利用人数</th>
+       <th>有効期限</th>
+       <th>状態</th>
+       <th>操作</th>
+      </tr>
+     </thead>
+     <tbody id="codeRows"></tbody>
+    </table>
+   </div>
+  </section>
+ </div>
+</main>
+
+<script>
+"use strict";
+
+const $=id=>document.getElementById(id);
+
+const SUPABASE_URL=
+ "https://gvxagesbmqkszjrvdtxi.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY=
+ "sb_publishable_0Tnq36DXrrS8dB-4dITTPw_hmug2OIN";
+
+// ゲーム本体とは別の保存キー
+const STORAGE_KEY="nexus:justcrash:gift-admin:v1";
+
+let token="";
+let account=null;
+let expiresAt="";
+let busy=false;
+let codes=[];
+
+function setMessage(id,text,error=false){
+ const el=$(id);
+ el.textContent=text;
+ el.style.color=error?"#ff8799":"#55e6a5";
+}
+
+function setBusy(value){
+ busy=value;
+
+ document.querySelectorAll("button,input").forEach(el=>{
+  el.disabled=value;
+ });
+}
+
+function saveSession(){
+ try{
+  localStorage.setItem(
+   STORAGE_KEY,
+   JSON.stringify({
+    token,
+    account,
+    expires_at:expiresAt
+   })
+  );
+
+  return true;
+ }catch{
+  return false;
+ }
+}
+
+function deleteSession(){
+ try{
+  localStorage.removeItem(STORAGE_KEY);
+ }catch{}
+}
+
+function readSession(){
+ try{
+  const saved=JSON.parse(
+   localStorage.getItem(STORAGE_KEY)||"null"
+  );
+
+  if(!saved)return null;
+
+  if(
+   typeof saved.token!=="string"||
+   !/^[a-f0-9]{64}$/.test(saved.token)
+  ){
+   deleteSession();
+   return null;
+  }
+
+  return saved;
+ }catch{
+  deleteSession();
+  return null;
+ }
+}
+
+function updateExpiry(value){
+ if(
+  typeof value==="string"&&
+  Number.isFinite(Date.parse(value))
+ ){
+  expiresAt=value;
+
+  if(token){
+   const saved=saveSession();
+
+   if(!saved){
+    setMessage(
+     "topMessage",
+     "ログイン状態を端末に保存できません。次回は再ログインが必要です。",
+     true
+    );
+   }
+  }
+ }
+
+ $("sessionInfo").textContent=expiresAt
+  ?"ログイン期限: "+
+   new Date(expiresAt).toLocaleString()+
+   "（アクセス時に延長）"
+  :"";
+}
+
+function showLoggedOut(){
+ $("loginPanel").classList.remove("hidden");
+ $("adminArea").classList.add("hidden");
+ $("adminName").textContent="";
+ $("codeRows").replaceChildren();
+ $("createdResult").replaceChildren();
+ $("createdResult").classList.add("hidden");
+ codes=[];
+}
+
+function showLoggedIn(){
+ $("loginPanel").classList.add("hidden");
+ $("adminArea").classList.remove("hidden");
+
+ $("adminName").textContent=account
+  ?account.display_name+" / "+account.username
+  :"管理者";
+
+ updateExpiry(expiresAt);
+}
+
+function clearLogin(){
+ token="";
+ account=null;
+ expiresAt="";
+ deleteSession();
+ showLoggedOut();
+}
+
+async function request(action,values={},authToken=token){
+ const headers={
+  "Content-Type":"application/json",
+  "apikey":SUPABASE_PUBLISHABLE_KEY
+ };
+
+ if(authToken){
+  headers["x-nexus-token"]=authToken;
+ }
+
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),25000);
+
+ try{
+  const res=await fetch(
+   SUPABASE_URL+"/functions/v1/nexus-auth",
+   {
+    method:"POST",
+    headers,
+    body:JSON.stringify({...values,action}),
+    signal:controller.signal
+   }
+  );
+
+  let result;
+
+  try{
+   result=await res.json();
+  }catch{
+   throw new Error("サーバーの応答を読み取れませんでした");
+  }
+
+  if(!res.ok){
+   const error=new Error(
+    result.error||"通信に失敗しました"
+   );
+
+   error.status=res.status;
+   throw error;
+  }
+
+  // ログイン処理の応答は、権限確認後に保存する
+  if(authToken&&authToken===token){
+   updateExpiry(result.expires_at);
+  }
+
+  return result;
+ }catch(error){
+  if(error.name==="AbortError"){
+   throw new Error(
+    "通信がタイムアウトしました。作成操作の場合は、再作成する前に一覧を更新してください。"
+   );
+  }
+
+  throw error;
+ }finally{
+  clearTimeout(timer);
+ }
+}
+
+function handleAccessError(error){
+ if(error.status===401||error.status===403){
+  clearLogin();
+
+  setMessage(
+   "loginMessage",
+   error.status===403
+    ?"管理権限を確認できませんでした。管理者アカウントでログインしてください。"
+    :"ログインの有効期限が切れました。再ログインしてください。",
+   true
+  );
+
+  return true;
+ }
+
+ return false;
+}
+
+function formatDate(value){
+ if(!value)return "無期限";
+
+ const date=new Date(value);
+
+ return Number.isFinite(date.getTime())
+  ?date.toLocaleString()
+  :"日時を確認できません";
+}
+
+function cell(row,text,className=""){
+ const td=document.createElement("td");
+ td.textContent=text;
+ if(className)td.className=className;
+ row.appendChild(td);
+ return td;
+}
+
+function renderCodes(){
+ $("codeRows").replaceChildren();
+
+ if(!codes.length){
+  setMessage("listMessage","まだコードはありません。");
+  return;
+ }
+
+ setMessage("listMessage","");
+
+ for(const gift of codes){
+  const tr=document.createElement("tr");
+
+  const codeCell=cell(tr,"");
+  const codeEl=document.createElement("code");
+  codeEl.textContent=gift.code;
+  codeCell.appendChild(codeEl);
+
+  cell(tr,Number(gift.amount).toLocaleString());
+
+  cell(
+   tr,
+   gift.used_count+" / "+
+   (gift.max_uses===null?"上限なし":gift.max_uses)
+  );
+
+  cell(tr,formatDate(gift.expires_at));
+
+  let state="有効";
+  let stateClass="good";
+
+  if(!gift.enabled){
+   state="停止中";
+   stateClass="bad";
+  }else if(
+   gift.expires_at&&
+   Date.parse(gift.expires_at)<=Date.now()
+  ){
+   state="期限切れ";
+   stateClass="warn";
+  }else if(
+   gift.max_uses!==null&&
+   gift.used_count>=gift.max_uses
+  ){
+   state="配布上限";
+   stateClass="warn";
+  }
+
+  cell(tr,state,stateClass);
+
+  const actions=cell(tr,"");
+  const button=document.createElement("button");
+
+  button.type="button";
+  button.className=gift.enabled?"danger":"secondary";
+  button.textContent=gift.enabled?"停止":"再開";
+  button.disabled=busy;
+
+  button.addEventListener("click",()=>{
+   toggleCode(gift);
+  });
+
+  actions.appendChild(button);
+  $("codeRows").appendChild(tr);
+ }
+}
+
+async function loadCodes(){
+ const result=await request("gift_list");
+
+ if(!Array.isArray(result.codes)){
+  throw new Error("コード一覧を確認できませんでした");
+ }
+
+ codes=result.codes;
+ renderCodes();
+}
+
+$("loginForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(busy)return;
+
+ const username=$("username").value.trim().toLowerCase();
+ const password=$("password").value;
+
+ if(!/^[a-z0-9_]{3,20}$/.test(username)){
+  setMessage("loginMessage","IDの形式を確認してください。",true);
+  return;
+ }
+
+ setBusy(true);
+ setMessage("loginMessage","ログインを確認しています…");
+
+ let candidateToken="";
+
+ try{
+  const result=await request(
+   "login",
+   {username,password},
+   ""
+  );
+
+  if(
+   typeof result.token!=="string"||
+   !/^[a-f0-9]{64}$/.test(result.token)||
+   !result.account
+  ){
+   throw new Error("ログイン結果を確認できませんでした");
+  }
+
+  candidateToken=result.token;
+
+  const status=await request(
+   "gift_admin_status",
+   {},
+   candidateToken
+  );
+
+  if(status.is_admin!==true){
+   throw new Error(
+    "このアカウントには管理権限がありません。"
+   );
+  }
+
+  token=candidateToken;
+  candidateToken="";
+  account=result.account;
+  expiresAt=status.expires_at||result.expires_at;
+
+  $("password").value="";
+  setMessage("loginMessage","");
+  setMessage("topMessage","");
+
+  showLoggedIn();
+
+  try{
+   await loadCodes();
+  }catch(error){
+   if(!handleAccessError(error)){
+    setMessage("listMessage",error.message,true);
+   }
+  }
+ }catch(error){
+  if(candidateToken){
+   try{
+    await request("logout",{},candidateToken);
+   }catch{}
+  }
+
+  setMessage("loginMessage",error.message,true);
+ }finally{
+  setBusy(false);
+ }
+});
+
+$("reloadButton").addEventListener("click",async()=>{
+ if(busy)return;
+
+ setBusy(true);
+ setMessage("listMessage","一覧を更新しています…");
+
+ try{
+  await loadCodes();
+ }catch(error){
+  if(!handleAccessError(error)){
+   setMessage("listMessage",error.message,true);
+  }
+ }finally{
+  setBusy(false);
+ }
+});
+
+$("createForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(busy)return;
+
+ const code=$("giftCode").value.trim().toUpperCase();
+ const amount=Number($("amount").value);
+ const maxRaw=$("maxUses").value.trim();
+ const dateRaw=$("expiresAt").value;
+
+ if(code&&!/^[A-Z0-9]{4,32}$/.test(code)){
+  setMessage(
+   "createMessage",
+   "コードは英数字4〜32文字で入力してください。",
+   true
+  );
+  return;
+ }
+
+ if(!Number.isSafeInteger(amount)||amount<1){
+  setMessage(
+   "createMessage",
+   "コイン数は1以上の安全な整数で入力してください。",
+   true
+  );
+  return;
+ }
+
+ const maxUses=maxRaw===""?null:Number(maxRaw);
+
+ if(
+  maxUses!==null&&
+  (
+   !Number.isSafeInteger(maxUses)||
+   maxUses<1||
+   maxUses>2147483647
+  )
+ ){
+  setMessage(
+   "createMessage",
+   "利用人数の上限を確認してください。",
+   true
+  );
+  return;
+ }
+
+ let expiry=null;
+
+ if(dateRaw){
+  const date=new Date(dateRaw);
+
+  if(
+   !Number.isFinite(date.getTime())||
+   date.getTime()<=Date.now()
+  ){
+   setMessage(
+    "createMessage",
+    "有効期限は未来の日時にしてください。",
+    true
+   );
+   return;
+  }
+
+  expiry=date.toISOString();
+ }
+
+ const approved=confirm(
+  "次の内容でコードを作成しますか？\n\n"+
+  "コード: "+(code||"ランダム生成")+"\n"+
+  "コイン数: "+amount.toLocaleString()+"\n"+
+  "有効期限: "+formatDate(expiry)+"\n"+
+  "人数上限: "+(maxUses===null?"なし":maxUses)+"\n"+
+  "同一アカウント: 1回まで"
+ );
+
+ if(!approved)return;
+
+ setBusy(true);
+ setMessage("createMessage","作成しています…");
+ $("createdResult").classList.add("hidden");
+
+ try{
+  const result=await request(
+   "gift_create",
+   {
+    code,
+    amount,
+    expires_at:expiry,
+    max_uses:maxUses
+   }
+  );
+
+  if(!result.gift||typeof result.gift.code!=="string"){
+   throw new Error(
+    "作成結果を確認できません。一覧を更新してください。"
+   );
+  }
+
+  $("createdResult").replaceChildren();
+
+  const title=document.createElement("div");
+  title.textContent="作成したコード";
+
+  const codeEl=document.createElement("code");
+  codeEl.textContent=result.gift.code;
+
+  const amountEl=document.createElement("div");
+  amountEl.textContent=
+   Number(result.gift.amount).toLocaleString()+"コイン";
+
+  $("createdResult").append(title,codeEl,amountEl);
+  $("createdResult").classList.remove("hidden");
+
+  setMessage("createMessage","コードを作成しました。");
+
+  try{
+   await loadCodes();
+  }catch(error){
+   if(!handleAccessError(error)){
+    setMessage(
+     "listMessage",
+     "コードは作成済みですが、一覧の更新に失敗しました。"+
+     "「一覧を更新」を押してください。",
+     true
+    );
+   }
+  }
+ }catch(error){
+  if(!handleAccessError(error)){
+   setMessage("createMessage",error.message,true);
+  }
+ }finally{
+  setBusy(false);
+ }
+});
+
+async function toggleCode(gift){
+ if(busy)return;
+
+ const enabled=!gift.enabled;
+
+ if(!confirm(
+  "コード「"+gift.code+"」を"+
+  (enabled?"再開":"停止")+"しますか？"
+  +"\n配布済みのコインは変わりません。"
+ ))return;
+
+ setBusy(true);
+
+ try{
+  await request(
+   "gift_set_enabled",
+   {
+    gift_id:gift.id,
+    enabled
+   }
+  );
+
+  await loadCodes();
+ }catch(error){
+  if(!handleAccessError(error)){
+   setMessage("listMessage",error.message,true);
+  }
+ }finally{
+  setBusy(false);
+ }
+}
+
+$("logoutButton").addEventListener("click",async()=>{
+ if(busy)return;
+
+ setBusy(true);
+
+ try{
+  try{
+   await request("logout");
+  }catch(error){
+   if(error.status!==401)throw error;
+  }
+
+  clearLogin();
+  setMessage("topMessage","管理画面からログアウトしました。");
+  setMessage("loginMessage","");
+ }catch(error){
+  setMessage("topMessage",error.message,true);
+ }finally{
+  setBusy(false);
+ }
+});
+
+async function start(){
+ const saved=readSession();
+
+ if(!saved)return;
+
+ token=saved.token;
+ account=saved.account||null;
+ expiresAt=saved.expires_at||"";
+
+ setBusy(true);
+ setMessage("topMessage","管理者ログインを確認しています…");
+
+ try{
+  const status=await request("gift_admin_status");
+
+  if(status.is_admin!==true){
+   clearLogin();
+   setMessage(
+    "loginMessage",
+    "このアカウントには管理権限がありません。",
+    true
+   );
+   setMessage("topMessage","");
+   return;
+  }
+
+  showLoggedIn();
+  setMessage("topMessage","");
+
+  try{
+   await loadCodes();
+  }catch(error){
+   if(!handleAccessError(error)){
+    setMessage("listMessage",error.message,true);
+   }
+  }
+ }catch(error){
+  if(!handleAccessError(error)){
+   // 通信障害では保存済みセッションを削除しない
+   showLoggedOut();
+
+   setMessage(
+    "topMessage",
+    "自動ログインを確認できませんでした。"+
+    "接続を確認して再読み込みするか、再ログインしてください。",
+    true
+   );
+  }
+ }finally{
+  setBusy(false);
+ }
+}
+
+start();
+</script>
+</body>
+</html>
