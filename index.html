@@ -180,8 +180,20 @@ button:disabled{opacity:.4;cursor:not-allowed}
 
   <div class="page" id="page-ranking">
    <div class="panel">
-    <h2>👑 長者番付</h2>
-    <p class="rank-empty">全体ランキングは準備中です。</p>
+    <div class="top"><h2>👑 オンライン長者番付</h2><button class="reset" id="rankRefresh">更新</button></div>
+    <p class="note">クラウド保存済みの所持コイン順。同じコイン数は同順位。上位50人を表示します。</p>
+    <p class="note">ギフトコードのコインも含みます。ゲストの残高は含みません。</p>
+    <div class="codemsg" id="rankMessage"></div>
+    <div class="stat" id="rankMine" style="display:none;margin:15px 0"></div>
+    <div style="overflow-x:auto">
+     <table style="width:100%;min-width:360px;border-collapse:collapse">
+      <thead><tr style="color:#9baac1;text-align:left">
+       <th style="padding:12px">順位</th><th style="padding:12px">プレイヤー</th>
+       <th style="padding:12px;text-align:right">所持コイン</th>
+      </tr></thead><tbody id="rankRows"></tbody>
+     </table>
+    </div>
+    <p class="note" id="rankUpdated"></p>
    </div>
   </div>
 
@@ -1548,6 +1560,11 @@ function renderAcct(){
  $("acctOut").style.display=account?"none":"block";
 
  $("who").textContent=account?account.display_name:"";
+ if(!account){
+  clearRanking();
+  $("rankMessage").textContent="ランキングを見るには、ユーザー画面でログインしてください。";
+ }
+
 
  if(account){
   $("accShowName").textContent=account.display_name;
@@ -1842,6 +1859,7 @@ function showPage(id){
  });
 
  if(id==="pro")resize();
+ if(id==="ranking")loadRanking();
 
  return true;
 }
@@ -1900,6 +1918,75 @@ window.addEventListener("beforeunload",event=>{
   event.returnValue="";
  }
 });
+
+// ===== オンラインランキング =====
+let rankLoading=false;
+let rankRequestNumber=0;
+
+function clearRanking(){
+ rankRequestNumber++;
+ $("rankRows").replaceChildren();
+ $("rankMine").replaceChildren();
+ $("rankMine").style.display="none";
+ $("rankUpdated").textContent="";
+ $("rankMessage").textContent="";
+}
+
+async function loadRanking(){
+ if(rankLoading)return;
+ clearRanking();
+ if(!nexusAccount||!nexusToken){
+  $("rankMessage").style.color="#9baac1";
+  $("rankMessage").textContent="ランキングを見るには、ユーザー画面でログインしてください。";
+  return;
+ }
+ const accountId=nexusAccount.id;
+ const requestToken=nexusToken;
+ const requestNumber=rankRequestNumber;
+ rankLoading=true;
+ $("rankRefresh").disabled=true;
+ $("rankMessage").style.color="#9baac1";
+ $("rankMessage").textContent="ランキングを取得しています…";
+ const stale=()=>requestNumber!==rankRequestNumber||!nexusAccount||nexusAccount.id!==accountId||nexusToken!==requestToken;
+ try{
+  const result=await nexusRequest("ranking",{},requestToken);
+  if(stale())return;
+  const validPlayer=p=>p&&Number.isSafeInteger(p.rank)&&p.rank>=1&&typeof p.display_name==="string"&&Number.isSafeInteger(p.coins)&&p.coins>=0;
+  if(!Array.isArray(result.players)||!result.players.every(validPlayer)||(result.mine!==null&&!validPlayer(result.mine))){
+   throw new Error("ランキングの形式を確認できませんでした");
+  }
+  if(typeof result.expires_at!=="string"||!Number.isFinite(Date.parse(result.expires_at))){
+   throw new Error("ログイン期限を確認できませんでした");
+  }
+  updateRememberedSession(requestToken,result.expires_at);
+  if(result.mine){
+   const title=document.createElement("small");title.textContent="あなたの順位";
+   const value=document.createElement("strong");value.className="green";
+   value.textContent=result.mine.rank.toLocaleString()+"位 / "+result.mine.coins.toLocaleString()+"コイン";
+   $("rankMine").append(title,value);$("rankMine").style.display="block";
+  }
+  for(const p of result.players){
+   const row=document.createElement("tr");row.style.borderBottom="1px solid #29364d";
+   if(p.is_self)row.style.background="#202d42";
+   const a=document.createElement("td"),b=document.createElement("td"),c=document.createElement("td");
+   for(const el of [a,b,c])el.style.padding="12px";
+   a.textContent=p.rank.toLocaleString()+"位";
+   b.textContent=p.display_name+(p.is_self?"（あなた）":"");
+   c.textContent=p.coins.toLocaleString();c.style.textAlign="right";c.style.color="#55e6a5";
+   row.append(a,b,c);$("rankRows").appendChild(row);
+  }
+  $("rankMessage").textContent=result.players.length?"":"まだランキング対象のプレイヤーがいません。";
+  const date=new Date(result.generated_at);
+  $("rankUpdated").textContent=Number.isFinite(date.getTime())?"取得日時: "+date.toLocaleString()+" ／ 「更新」で再取得できます。":"";
+ }catch(error){
+  if(stale())return;
+  $("rankMessage").style.color="#ff647c";
+  $("rankMessage").textContent=error.status===401?"ログイン状態を確認できません。未保存の変更がないことを確認してページを開き直してください。":error.message||"ランキングを取得できませんでした。";
+ }finally{
+  rankLoading=false;$("rankRefresh").disabled=false;
+ }
+}
+$("rankRefresh").addEventListener("click",loadRanking);
 
 // ===== 初期表示 =====
 fxResize();
