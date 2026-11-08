@@ -80,6 +80,66 @@ button:disabled{opacity:.4;cursor:not-allowed}
  .betrow label{width:100px;font-size:12px}
  .header-right{gap:6px}
 }
+
+/* Responsive layout */
+.app{min-height:calc(100vh - 65px);min-height:calc(100dvh - 65px)}
+.app .container{width:100%;max-width:1400px;min-width:0;padding:clamp(10px,2vw,24px)}
+.panel{min-width:0;padding:clamp(14px,2vw,22px)}
+.header-right,.top,.betrow,.coderow{min-width:0}
+.header-right{flex-wrap:wrap}
+.balance{max-width:100%;overflow-wrap:anywhere}
+.multiplier{font-size:clamp(38px,7vw,65px)}
+.game{height:clamp(240px,45vh,440px)}
+.stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stat{min-width:0}
+.stat strong{font-size:clamp(18px,2.5vw,23px);overflow-wrap:anywhere}
+#who,#syncStatus,#sessionInfo,#sessionWarning,.codemsg{overflow-wrap:anywhere}
+@media(max-width:760px){
+ header{padding:10px 14px;flex-wrap:wrap}
+ .header-right{margin-left:auto;gap:6px}
+ .app{flex-direction:column}
+ .side{width:100%;border-right:0;border-bottom:1px solid #293449;display:flex;flex-wrap:wrap;gap:6px;padding:10px}
+ .nav{width:auto;margin:0;padding:10px 12px;font-size:14px}
+ .sub{left:0;top:calc(100% + 6px)}
+ .navmsg{width:100%}
+ .app .container{margin:0}
+ .history{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .betrow label{width:100px;flex-shrink:0}
+}
+@media(max-width:760px) and (max-aspect-ratio:3/4){
+ .game{height:clamp(240px,38vh,380px)}
+ .stats{grid-template-columns:1fr}
+ .betrow{align-items:stretch;flex-direction:column;gap:6px}
+ .betrow label{width:auto}
+ .betrow input{width:100%;flex:auto}
+ .coderow{flex-direction:column}
+ .coderow input,.coderow button{width:100%;flex:auto}
+}
+@media(min-aspect-ratio:3/2) and (max-height:600px){
+ header{min-height:48px;padding:6px 12px;flex-wrap:wrap}
+ .app{flex-direction:column;min-height:calc(100dvh - 48px)}
+ .side{width:100%;border-right:0;border-bottom:1px solid #293449;display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px}
+ .nav{width:auto;margin:0;padding:8px 10px;font-size:13px}
+ .sub{left:0;top:calc(100% + 6px)}
+ .navmsg{width:100%}
+ .app .container{margin:0;padding:10px}
+ .panel{padding:12px;margin-bottom:10px}
+ .game{height:clamp(160px,42vh,250px);margin-top:10px}
+ .multiplier{font-size:clamp(36px,8vh,52px)}
+ .betrow{flex-direction:row;align-items:center}
+ .betrow label{width:100px;flex-shrink:0}
+ .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .history{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .controls{margin-top:10px}
+ button{padding:10px 14px}
+}
+@media(max-width:380px){
+ .header-right{width:100%;justify-content:space-between}
+ .controls{flex-wrap:wrap}
+ .controls button{flex:1 1 100%}
+ .chip{flex:1 1 28%}
+}
+
 </style>
 </head>
 <body>
@@ -1999,6 +2059,21 @@ $("gameTitle").textContent=
 renderAcct();
 setBtn();
 restoreSession();
+</script>
+
+<script>
+// Keep the chart aligned with layout changes as well as window resizing.
+if (typeof ResizeObserver !== "undefined") {
+  let layoutFrame = 0;
+  const chartLayoutObserver = new ResizeObserver(() => {
+    cancelAnimationFrame(layoutFrame);
+    layoutFrame = requestAnimationFrame(() => {
+      const chart = document.getElementById("chart");
+      if (chart && chart.clientWidth > 0 && chart.clientHeight > 0) resize();
+    });
+  });
+  chartLayoutObserver.observe(document.getElementById("game"));
+}
 </script>
 </body>
 </html>
