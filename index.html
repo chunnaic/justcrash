@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRASH</title>
+<title>NEXUS</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090d18;color:white;font-family:Arial,sans-serif}
@@ -139,6 +139,15 @@ button:disabled{opacity:.4;cursor:not-allowed}
  .controls button{flex:1 1 100%}
  .chip{flex:1 1 28%}
 }
+/* NEXUS branding */
+header .logo{order:2;flex:0 0 auto;margin-left:auto;font-size:clamp(23px,4vw,32px);letter-spacing:.12em;line-height:1.3;color:#72e8ff}
+header .header-right{order:1;margin-left:0;margin-right:auto}
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+ header .logo{background-image:linear-gradient(90deg,#ff557d 0%,#ffb84d 16.66%,#fff06a 33.33%,#55e6a5 50%,#59caff 66.66%,#bc83ff 83.33%,#ff557d 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:nexusRainbow 6s linear infinite}
+}
+@keyframes nexusRainbow{from{background-position:200% 50%}to{background-position:0% 50%}}
+@media(max-width:380px){header .logo{order:0;margin-left:auto}header .header-right{order:1;flex-basis:100%;margin:0}}
+@media(prefers-reduced-motion:reduce){header .logo{animation:none;background-position:50% 50%}}
 
 </style>
 </head>
@@ -146,7 +155,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <canvas id="fx" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50"></canvas>
 
 <header>
- <div class="logo">CRASH</div>
+ <div class="logo">NEXUS</div>
  <div class="header-right">
   <div>
    <div class="status" id="who"></div>
@@ -2062,17 +2071,16 @@ restoreSession();
 </script>
 
 <script>
-// Keep the chart aligned with layout changes as well as window resizing.
 if (typeof ResizeObserver !== "undefined") {
-  let layoutFrame = 0;
-  const chartLayoutObserver = new ResizeObserver(() => {
-    cancelAnimationFrame(layoutFrame);
-    layoutFrame = requestAnimationFrame(() => {
-      const chart = document.getElementById("chart");
-      if (chart && chart.clientWidth > 0 && chart.clientHeight > 0) resize();
-    });
+ let layoutFrame = 0;
+ const chartLayoutObserver = new ResizeObserver(() => {
+  cancelAnimationFrame(layoutFrame);
+  layoutFrame = requestAnimationFrame(() => {
+   const chart = document.getElementById("chart");
+   if (chart && chart.clientWidth > 0 && chart.clientHeight > 0) resize();
   });
-  chartLayoutObserver.observe(document.getElementById("game"));
+ });
+ chartLayoutObserver.observe(document.getElementById("game"));
 }
 </script>
 </body>
